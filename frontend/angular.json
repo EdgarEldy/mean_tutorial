@@ -25,9 +25,21 @@
               "src/assets"
             ],
             "styles": [
-              "src/styles.css"
+              "src/styles.css",
+              "src/assets/css/all.css",
+              "src/assets/css/bootstrap.min.css",
+              "src/assets/css/sb-admin-2.min.css",
+              "src/assets/css/dataTables.bootstrap4.min.css",
+              "src/assets/css/main.css",
+              "node_modules/ngx-toastr/toastr.css"
             ],
-            "scripts": []
+            "scripts": [
+              "src/assets/js/jquery.min.js",
+              "src/assets/js/bootstrap.bundle.min.js",
+              "src/assets/js/dataTables.min.js",
+              "src/assets/js/dataTables.bootstrap4.min.js",
+              "src/assets/js/sb-admin-2.min.js"
+            ]
           },
           "configurations": {
             "production": {
@@ -94,5 +106,8 @@
         }
       }
     }
+  },
+  "cli": {
+    "analytics": false
   }
 }

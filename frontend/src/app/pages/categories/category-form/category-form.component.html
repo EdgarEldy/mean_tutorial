@@ -1,0 +1,27 @@
+<div class="modal-header">
+  <h4 class="modal-title" id="modal-basic-title">
+    {{ category.id ? 'Update a category' : 'Create a category' }}
+  </h4>
+  <button type="button" class="btn-close" aria-label="Close" (click)="activeModal.dismiss()">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+<div class="modal-body">
+  <form>
+    <div class="mb-3">
+      <label>Category name</label>
+      <div class="input-group">
+        <input type="text" [(ngModel)]="category.category_name" name="category_name" class="form-control"
+               placeholder="" required>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary" (click)="submit()">
+          Save
+        </button>
+        <button type="reset" class="btn btn-secondary" (click)="activeModal.dismiss()">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </form>
+</div>

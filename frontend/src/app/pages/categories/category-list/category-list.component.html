@@ -1,0 +1,37 @@
+<div class="container-fluid">
+  <!-- Page Heading -->
+  <div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-2 text-gray-800">
+      <button type="button" (click)="openCategoryModal(category)"
+              class="btn btn-primary btn-sm text-white btn-add-category">
+        <i class="fas fa-plus mr-1"></i>New
+      </button>
+    </h1>
+  </div>
+  <div class="card shadow mb-4 border-bottom-primary">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+          <thead>
+          <tr>
+            <th>#</th>
+            <th>Category name</th>
+            <th>Options</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr *ngFor="let category of categories">
+            <td>{{ category.id }}</td>
+            <td>{{ category.category_name }}</td>
+            <td>
+              <button class="btn btn-primary btn-sm" (click)="editCategory(category.id)">Edit</button>
+              |
+              <button class="btn btn-danger btn-sm" (click)="deleteCategory(category.id)">Remove</button>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
