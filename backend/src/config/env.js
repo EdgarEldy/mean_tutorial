@@ -7,4 +7,5 @@ module.exports = {
   DB_PASSWORD: process.env.DB_PASSWORD || '',
   DB_NAME:     process.env.DB_NAME     || 'mean_db',
   DB_DIALECT:  process.env.DB_DIALECT  || 'mysql',
+  JWT_SECRET:  process.env.JWT_SECRET  || 'change_this_secret_in_production',
 };
