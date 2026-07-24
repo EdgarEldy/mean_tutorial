@@ -10,9 +10,6 @@ jobs:
   backend:
     name: Backend tests
     runs-on: ubuntu-latest
-    if: >
-      contains(github.event.commits[0].modified, 'backend/') ||
-      github.event_name == 'pull_request'
 
     services:
       mysql:
@@ -60,13 +57,11 @@ jobs:
           DB_PASSWORD: root
           DB_NAME: mean_db
           DB_DIALECT: mysql
+          JWT_SECRET: ci_test_secret
 
   frontend:
     name: Frontend build
     runs-on: ubuntu-latest
-    if: >
-      contains(github.event.commits[0].modified, 'frontend/') ||
-      github.event_name == 'pull_request'
 
     defaults:
       run:
