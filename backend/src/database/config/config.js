@@ -1,3 +1,6 @@
+// sequelize-cli runs outside the app bootstrap (no server.js, no env.js),
+// so we read process.env directly here after loading .env manually.
+// This is the intentional exception to the env.js centralization rule.
 require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
 
 module.exports = {
