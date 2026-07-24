@@ -130,8 +130,6 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
-# yarn.lock
-yarn.lock
 
 # idea files
 .idea
