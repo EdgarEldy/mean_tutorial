@@ -9,6 +9,7 @@ module.exports = (sequelize) => {
   }
   Order.init(
     {
+      id:          { type: DataTypes.BIGINT,   primaryKey: true, autoIncrement: true },
       customer_id: { type: DataTypes.BIGINT,   allowNull: false },
       product_id:  { type: DataTypes.BIGINT,   allowNull: false },
       quantity:    { type: DataTypes.INTEGER,  allowNull: false },
