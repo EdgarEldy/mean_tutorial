@@ -8,10 +8,13 @@ module.exports = (sequelize) => {
   }
   BlacklistedToken.init(
     {
-      id:         { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
-      jti:        { type: DataTypes.STRING(255), allowNull: false, unique: true },
-      expires_at: { type: DataTypes.DATE, allowNull: false },
-      user_id:    { type: DataTypes.BIGINT, allowNull: false },
+      user_id:        { type: DataTypes.BIGINT,      allowNull: true },
+      token:          { type: DataTypes.STRING(768), allowNull: false },
+      jti:            { type: DataTypes.STRING(255), allowNull: true },
+      blacklisted_at: { type: DataTypes.DATE,        allowNull: true },
+      created_at:     { type: DataTypes.DATE,        allowNull: false },
+      expires_at:     { type: DataTypes.DATE,        allowNull: true },
+      validated_at:   { type: DataTypes.DATE,        allowNull: true },
     },
     { sequelize, modelName: 'BlacklistedToken', tableName: 'blacklisted_tokens', timestamps: false }
   );
