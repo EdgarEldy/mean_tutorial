@@ -7,7 +7,10 @@ module.exports = (sequelize) => {
     }
   }
   Category.init(
-    { category_name: { type: DataTypes.STRING(255), allowNull: false } },
+    {
+      id:            { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
+      category_name: { type: DataTypes.STRING(255), allowNull: false },
+    },
     { sequelize, modelName: 'Category', tableName: 'categories' }
   );
   return Category;
