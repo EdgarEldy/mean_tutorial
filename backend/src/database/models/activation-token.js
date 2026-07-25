@@ -8,11 +8,11 @@ module.exports = (sequelize) => {
   }
   ActivationToken.init(
     {
-      id:         { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
-      token:      { type: DataTypes.STRING(255), allowNull: false, unique: true },
-      expires_at: { type: DataTypes.DATE, allowNull: false },
-      used:       { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-      user_id:    { type: DataTypes.BIGINT, allowNull: false },
+      user_id:      { type: DataTypes.BIGINT,      allowNull: false },
+      token:        { type: DataTypes.STRING(255), allowNull: true },
+      created_at:   { type: DataTypes.DATE,        allowNull: false },
+      expires_at:   { type: DataTypes.DATE,        allowNull: true },
+      validated_at: { type: DataTypes.DATE,        allowNull: true },
     },
     { sequelize, modelName: 'ActivationToken', tableName: 'activation_tokens', timestamps: false }
   );
