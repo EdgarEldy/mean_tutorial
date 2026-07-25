@@ -16,6 +16,7 @@ app.use(passport.initialize());
 
 const v1 = express.Router();
 
+v1.use('/auth',       require('./modules/auth/auth.routes'));
 v1.use('/categories', require('./modules/categories/category.routes'));
 v1.use('/products',   require('./modules/products/product.routes'));
 v1.use('/customers',  require('./modules/customers/customer.routes'));
