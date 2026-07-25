@@ -8,11 +8,10 @@ module.exports = (sequelize) => {
   }
   PasswordResetToken.init(
     {
-      id:         { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
-      token:      { type: DataTypes.STRING(255), allowNull: false, unique: true },
-      expires_at: { type: DataTypes.DATE, allowNull: false },
-      used:       { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-      user_id:    { type: DataTypes.BIGINT, allowNull: false },
+      user_id:     { type: DataTypes.BIGINT,      allowNull: true },
+      token:       { type: DataTypes.STRING(255), allowNull: false },
+      type:        { type: DataTypes.STRING(255), allowNull: false },
+      expiry_date: { type: DataTypes.DATE,        allowNull: false },
     },
     { sequelize, modelName: 'PasswordResetToken', tableName: 'password_reset_tokens', timestamps: false }
   );
