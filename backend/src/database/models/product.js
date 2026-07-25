@@ -9,6 +9,7 @@ module.exports = (sequelize) => {
   }
   Product.init(
     {
+      id:           { type: DataTypes.BIGINT,     primaryKey: true, autoIncrement: true },
       category_id:  { type: DataTypes.BIGINT,     allowNull: false },
       product_name: { type: DataTypes.STRING(255), allowNull: false },
       unit_price:   { type: DataTypes.FLOAT,       allowNull: false },
