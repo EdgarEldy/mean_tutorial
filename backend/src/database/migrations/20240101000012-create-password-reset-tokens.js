@@ -2,16 +2,11 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('password_reset_tokens', {
-      id:         { type: Sequelize.BIGINT, primaryKey: true, autoIncrement: true, allowNull: false },
-      token:      { type: Sequelize.STRING(255), allowNull: false, unique: true },
-      expires_at: { type: Sequelize.DATE, allowNull: false },
-      used:       { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
-      user_id: {
-        type: Sequelize.BIGINT,
-        allowNull: false,
-        references: { model: 'users', key: 'id' },
-        onDelete: 'RESTRICT',
-      },
+      id:          { type: Sequelize.BIGINT, primaryKey: true, autoIncrement: true, allowNull: false },
+      user_id:     { type: Sequelize.BIGINT, allowNull: true, references: { model: 'users', key: 'id' }, onUpdate: 'CASCADE', onDelete: 'SET NULL' },
+      token:       { type: Sequelize.STRING(255), allowNull: false },
+      type:        { type: Sequelize.STRING(255), allowNull: false },
+      expiry_date: { type: Sequelize.DATE, allowNull: false },
     });
   },
   async down(queryInterface) { await queryInterface.dropTable('password_reset_tokens'); },
