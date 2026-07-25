@@ -12,9 +12,11 @@ Repository: https://github.com/EdgarEldy/mean_tutorial
 
 - [Tech stack](#tech-stack)
 - [Data model](#data-model)
+- [Auth model (EER_AUTH)](#auth-model-eer_auth)
 - [Branching strategy](#branching-strategy)
 - [Project structure](#project-structure)
 - [Standard response format](#standard-response-format)
+- [Git commit convention](#git-commit-convention)
 - [feature/api/core-architecture](#featureapicore-architecture)
 - [feature/api/categories](#featureapicategories)
 - [feature/api/products](#featureapiproducts)
@@ -45,9 +47,7 @@ Repository: https://github.com/EdgarEldy/mean_tutorial
 | ORM | Sequelize | ^6.37.7 |
 | Migrations & Seeders | Sequelize CLI | ^6.6.3 |
 | Validation | express-validator | ^7.2.1 |
-| Authentication | Passport + passport-local + passport-jwt | ^0.7.0 / ^1.0.0 / ^4.0.1 |
-| JWT | jsonwebtoken | ^9.0.2 |
-| Password hashing | bcryptjs | ^3.0.2 |
+| Authentication | jsonwebtoken + bcryptjs | ^9.0.2 / ^3.0.2 |
 | Environment | dotenv | ^16.5.0 |
 | Tests | Jest + Supertest | ^29.7.0 / ^7.1.0 |
 | Dev server | nodemon | ^3.1.10 |
@@ -80,36 +80,57 @@ products (id, category_id FK, product_name, unit_price)
     │ 1
     │
     │ N
-orders (id, customer_id FK, product_id FK, qty, total)
+orders (id, customer_id FK, product_id FK, quantity, total)
     │ N
     │
     │ 1
-customers (id, first_name, last_name, tel, email, address)
+customers (id, first_name, last_name, telephone, email, address)
 ```
 
-### Business entities — columns
+### Column details
 
-| Table | Column | Type | Notes |
-|---|---|---|---|
-| categories | id | INT PK AI | |
-| | category_name | VARCHAR(100) | NOT NULL |
-| products | id | INT PK AI | |
-| | category_id | INT FK | → categories |
-| | product_name | VARCHAR(150) | NOT NULL |
-| | unit_price | DECIMAL(10,2) | NOT NULL |
-| customers | id | INT PK AI | |
-| | first_name | VARCHAR(100) | NOT NULL |
-| | last_name | VARCHAR(100) | NOT NULL |
-| | tel | VARCHAR(20) | |
-| | email | VARCHAR(150) | UNIQUE |
-| | address | TEXT | |
-| orders | id | INT PK AI | |
-| | customer_id | INT FK | → customers |
-| | product_id | INT FK | → products |
-| | qty | INT | NOT NULL |
-| | total | DECIMAL(10,2) | computed: qty × unit_price |
+**categories**
 
-### Auth data (RBAC + token lifecycle)
+| Column | Type | Constraints |
+|---|---|---|
+| id | BIGINT | PK, auto-increment |
+| category_name | VARCHAR(255) | NOT NULL |
+
+**products**
+
+| Column | Type | Constraints |
+|---|---|---|
+| id | BIGINT | PK, auto-increment |
+| category_id | BIGINT | FK → categories.id, NOT NULL |
+| product_name | VARCHAR(255) | NOT NULL |
+| unit_price | DECIMAL(10,2) | NOT NULL |
+
+**customers**
+
+| Column | Type | Constraints |
+|---|---|---|
+| id | BIGINT | PK, auto-increment |
+| first_name | VARCHAR(255) | NOT NULL |
+| last_name | VARCHAR(255) | NOT NULL |
+| telephone | VARCHAR(20) | |
+| email | VARCHAR(255) | UNIQUE |
+| address | TEXT | |
+
+**orders**
+
+| Column | Type | Constraints |
+|---|---|---|
+| id | BIGINT | PK, auto-increment |
+| customer_id | BIGINT | FK → customers.id, NOT NULL |
+| product_id | BIGINT | FK → products.id, NOT NULL |
+| quantity | INT | NOT NULL |
+| total | DECIMAL(10,2) | computed = quantity × unit_price |
+
+---
+
+## Auth model (EER_AUTH)
+
+The authentication and authorization system uses the following tables:
 
 ```
 users ──< role_user >── roles ──< role_permission >── permissions
@@ -119,15 +140,88 @@ users ──< role_user >── roles ──< role_permission >── permission
   └──< password_reset_tokens
 ```
 
-| Table | Column | Notes |
+**users**
+
+| Column | Type | Constraints |
 |---|---|---|
-| users | id, first_name, last_name, email, password | bcryptjs hash |
-| | enabled, account_locked | boolean flags |
-| roles | id, name | ADMIN, USER |
-| permissions | id, resource, action | e.g. categories:write |
-| blacklisted_tokens | id, jti, expires_at | logout invalidation |
-| activation_tokens | id, user_id, token, expires_at | email verification |
-| password_reset_tokens | id, user_id, token, expires_at | password reset |
+| id | BIGINT | PK, auto-increment |
+| first_name | VARCHAR(50) | NOT NULL |
+| last_name | VARCHAR(100) | NOT NULL |
+| email | VARCHAR(100) | NOT NULL, UNIQUE |
+| password | VARCHAR(255) | bcryptjs hash |
+| enabled | BOOLEAN | NOT NULL, default false |
+| account_locked | BOOLEAN | NOT NULL, default false |
+
+**roles**
+
+| Column | Type | Constraints |
+|---|---|---|
+| id | BIGINT | PK, auto-increment |
+| role_name | VARCHAR(50) | NOT NULL, UNIQUE |
+
+**permissions**
+
+| Column | Type | Constraints |
+|---|---|---|
+| id | BIGINT | PK, auto-increment |
+| resource | VARCHAR(50) | NOT NULL |
+| action | VARCHAR(50) | NOT NULL |
+
+**role_user** (pivot, no timestamps)
+
+| Column | Type | Constraints |
+|---|---|---|
+| user_id | BIGINT | FK → users.id, CASCADE |
+| role_id | BIGINT | FK → roles.id, CASCADE |
+
+**role_permission** (pivot, no timestamps)
+
+| Column | Type | Constraints |
+|---|---|---|
+| role_id | BIGINT | FK → roles.id, CASCADE |
+| permission_id | BIGINT | FK → permissions.id, CASCADE |
+
+**activation_tokens** (timestamps: false)
+
+| Column | Type | Constraints |
+|---|---|---|
+| id | BIGINT | PK, auto-increment |
+| user_id | BIGINT | FK → users.id, CASCADE |
+| token | VARCHAR(255) | |
+| created_at | DATETIME | NOT NULL |
+| expires_at | DATETIME | |
+| validated_at | DATETIME | |
+
+**blacklisted_tokens** (timestamps: false)
+
+| Column | Type | Constraints |
+|---|---|---|
+| id | BIGINT | PK, auto-increment |
+| user_id | BIGINT | FK → users.id, SET NULL (nullable) |
+| token | VARCHAR(768) | NOT NULL |
+| jti | VARCHAR(255) | UNIQUE |
+| blacklisted_at | DATETIME | |
+| created_at | DATETIME | NOT NULL |
+| expires_at | DATETIME | |
+| validated_at | DATETIME | |
+
+**password_reset_tokens** (timestamps: false)
+
+| Column | Type | Constraints |
+|---|---|---|
+| id | BIGINT | PK, auto-increment |
+| user_id | BIGINT | FK → users.id, SET NULL (nullable) |
+| token | VARCHAR(255) | NOT NULL |
+| type | VARCHAR(255) | NOT NULL |
+| expiry_date | DATETIME | NOT NULL |
+
+### Authorization rules
+
+| Resource | GET | POST / PUT / DELETE |
+|---|---|---|
+| `categories`, `products` | Public | Admin role |
+| `customers`, `orders` | Authenticated | Admin role |
+| `auth/*` | Public | — |
 
 ---
 
@@ -138,17 +232,19 @@ users ──< role_user >── roles ──< role_permission >── permission
 | `master` | Stable, production-ready. No direct commits — merges only from `develop`. |
 | `develop` | Integration branch. All `feature/*` branches merge here. |
 | `feature/api/core-architecture` | Technical foundation: `src/` structure, config, deps, shared utils, error middleware. |
-| `feature/api/categories` | `Category` module: model, repository, service, controller, routes, validation, tests. |
+| `feature/api/categories` | `Category` module: model, migration, seeder, repository, service, controller, routes, validation, tests. |
 | `feature/api/products` | `Product` module with FK to `Category`. |
 | `feature/api/customers` | `Customer` module. |
 | `feature/api/orders` | `Order` module with business logic (total calculation). |
-| `feature/api/auth` | JWT auth: register, login, logout, protect middleware, RBAC. |
+| `feature/api/auth` | JWT auth: register, activate, login, logout, forgot-password, reset-password, RBAC. |
 | `feature/frontend/core-architecture` | Angular 21 base: standalone app, routing, HttpClient, core services. |
 | `feature/frontend/categories` | Categories feature: service, list/form components, lazy route. |
 | `feature/frontend/products` | Products feature. |
 | `feature/frontend/customers` | Customers feature. |
-| `feature/frontend/orders` | Orders feature with automatic total calculation. |
+| `feature/frontend/orders` | Orders feature with automatic total display. |
 | `feature/frontend/auth` | Login/Register pages, JWT interceptor, route guard. |
+
+Each feature branch ends with a Pull Request to `develop`. Each PR must include atomic commits (one per file) and passing unit + integration tests.
 
 ---
 
@@ -159,14 +255,13 @@ users ──< role_user >── roles ──< role_permission >── permission
 ```
 src/
 ├── server.js                      ← entry point
-├── app.js                         ← Express factory
+├── app.js                         ← Express factory, versioned sub-router
 ├── config/
 │   ├── env.js                     ← single source for all process.env reads
-│   ├── database.js                ← runtime Sequelize instance
-│   └── passport.js                ← JWT strategy (feature/api/auth)
+│   └── database.js                ← runtime Sequelize instance
 ├── database/
-│   ├── config/config.js           ← sequelize-cli config
-│   ├── models/index.js            ← auto-loader
+│   ├── config/config.js           ← sequelize-cli config (reads .env)
+│   ├── models/index.js            ← auto-loader (fs.readdirSync)
 │   ├── models/                    ← one file per entity
 │   ├── repositories/              ← ONLY layer that touches the DB
 │   ├── migrations/
@@ -179,13 +274,23 @@ src/
 │       └── <resource>.validation.js
 ├── middlewares/
 │   ├── error.middleware.js
-│   └── auth.middleware.js
+│   └── auth.middleware.js         ← JWT verify + jti blacklist check
 └── shared/utils/
     ├── apiResponse.js
     └── catchAsync.js
 ```
 
 **Request flow:** `Route → auth.middleware (optional) → validation → Controller → Service → Repository → DB`
+
+**Versioned router:** all API endpoints live under `/api/v1/` via a sub-router mounted in `app.js`:
+
+```js
+const v1 = express.Router();
+v1.use('/auth',       require('./modules/auth/auth.routes'));
+v1.use('/categories', require('./modules/categories/category.routes'));
+// ...
+app.use('/api/v1', v1);
+```
 
 ### Frontend (`frontend/src/`)
 
@@ -217,7 +322,7 @@ src/
 │   ├── orders/
 │   └── auth/
 └── environments/
-    ├── environment.ts             ← { apiUrl: 'http://localhost:3001/api' }
+    ├── environment.ts             ← { apiUrl: 'http://localhost:3001/api/v1' }
     └── environment.prod.ts
 ```
 
@@ -229,10 +334,56 @@ All API endpoints return a consistent JSON envelope:
 
 ```json
 { "success": true,  "message": "Categories retrieved.", "data": [...] }
-{ "success": false, "message": "Validation failed.", "errors": {...} }
+{ "success": false, "message": "Validation failed.", "errors": [...] }
 ```
 
 Implemented in `backend/src/shared/utils/apiResponse.js`.
+
+HTTP status codes follow REST conventions: `200` for success, `201` for creation, `404` for not found, `409` for conflict, `422` for validation failures, `401`/`403` for auth errors.
+
+---
+
+## Git commit convention
+
+All commits follow **Conventional Commits**.
+
+### Format
+
+```
+<type>(<scope>): <short summary>
+
+<body — what was done and why>
+```
+
+### Types
+
+| Type | When to use |
+|---|---|
+| `feat` | New feature or file |
+| `fix` | Bug fix |
+| `refactor` | Code change that is neither a bug fix nor a feature |
+| `test` | Adding or updating tests |
+| `docs` | Documentation only |
+| `chore` | Tooling, config, CI, deps |
+| `ci` | CI/CD pipeline changes |
+
+### Atomic commit rule
+
+> **One commit per file added or modified.** Never group unrelated files in a single commit.
+
+### Example commit
+
+```
+feat(config): add src/config/env.js to centralize environment variables
+
+Reading process.env directly in multiple files leads to scattered defaults
+and makes it impossible to see at a glance what variables the application
+expects.
+
+env.js is the single source of truth: every process.env read happens here,
+with explicit defaults and type coercions (parseInt for numeric values).
+All other modules import from this file instead of process.env.
+```
 
 ---
 
@@ -255,7 +406,7 @@ Implemented in `backend/src/shared/utils/apiResponse.js`.
 | `src/shared/utils/catchAsync.js` | Async error propagation wrapper |
 | `src/middlewares/error.middleware.js` | Global error handler |
 | `src/middlewares/auth.middleware.js` | JWT protect skeleton |
-| `src/app.js` | Express factory with middleware stack |
+| `src/app.js` | Express factory with middleware stack and versioned sub-router |
 | `src/server.js` | Entry point with DB connection guard |
 
 ### Files removed
@@ -266,61 +417,149 @@ Old express-generator scaffold: `app.js`, `bin/`, `routes/`, `public/`, `models/
 
 - [ ] `yarn install` succeeds
 - [ ] `yarn dev` starts without error
-- [ ] `GET http://localhost:3001` returns a response (not Express HTML 404)
-- [ ] `yarn test:unit` → 0 failures
-- [ ] code-reviewer approved
+- [ ] `GET http://localhost:3001` returns a response
+- [ ] `yarn test:unit` passes
 
 ---
 
 ## feature/api/categories
 
-**Endpoints:**
+### Endpoints
 
 | Method | URL | Description |
 |---|---|---|
-| GET | `/api/categories` | List all categories |
-| GET | `/api/categories/:id` | Get one category |
-| POST | `/api/categories` | Create a category |
-| PUT | `/api/categories/:id` | Update a category |
-| DELETE | `/api/categories/:id` | Delete a category |
+| GET | `/api/v1/categories` | List all categories |
+| GET | `/api/v1/categories/:id` | Get one category |
+| POST | `/api/v1/categories` | Create a category |
+| PUT | `/api/v1/categories/:id` | Update a category |
+| DELETE | `/api/v1/categories/:id` | Delete a category |
 
-**Files:** model, migration, seeder, repository, validation, service, controller, routes, unit tests, integration tests.
+### Files (one commit each)
+
+`category.js` (model) → migration → seeder → `category.repository.js` → `category.validation.js` → `category.service.js` → `category.controller.js` → `category.routes.js` → unit tests → integration tests
+
+### Checklist
+
+- [ ] All 5 endpoints return the standard response envelope
+- [ ] `POST` returns `201`; missing `category_name` returns `422`
+- [ ] `GET /:id` returns `404` for unknown id
+- [ ] Unit tests pass
+- [ ] Integration tests pass (`sequelize.sync({ force: true })` in `beforeAll`)
 
 ---
 
 ## feature/api/products
 
-**Endpoints:** same CRUD pattern as categories.
-**Extra:** `GET /api/products` returns products with their associated category (`include: [Category]`).
+### Endpoints
+
+| Method | URL | Description |
+|---|---|---|
+| GET | `/api/v1/products` | List all products (includes category) |
+| GET | `/api/v1/products/:id` | Get one product (includes category) |
+| POST | `/api/v1/products` | Create a product |
+| PUT | `/api/v1/products/:id` | Update a product |
+| DELETE | `/api/v1/products/:id` | Delete a product |
+
+**Extra:** `GET /api/v1/products` and `GET /api/v1/products/:id` eager-load the associated `Category`.
+
+### Checklist
+
+- [ ] Nested `category` object present on product responses
+- [ ] `POST` with non-existent `category_id` returns `404`
+- [ ] Unit and integration tests pass
 
 ---
 
 ## feature/api/customers
 
-**Endpoints:** same CRUD pattern.
+### Endpoints
+
+| Method | URL | Description |
+|---|---|---|
+| GET | `/api/v1/customers` | List all customers |
+| GET | `/api/v1/customers/:id` | Get one customer |
+| POST | `/api/v1/customers` | Create a customer |
+| PUT | `/api/v1/customers/:id` | Update a customer |
+| DELETE | `/api/v1/customers/:id` | Delete a customer |
+
+### Checklist
+
+- [ ] `POST` with invalid email format returns `422`
+- [ ] Unit and integration tests pass
 
 ---
 
 ## feature/api/orders
 
-**Endpoints:** same CRUD pattern.
-**Business logic:** `total = qty × product.unit_price` computed in the service layer on create/update.
+### Endpoints
+
+| Method | URL | Description |
+|---|---|---|
+| GET | `/api/v1/orders` | List all orders (includes customer + product + category) |
+| GET | `/api/v1/orders/:id` | Get one order |
+| POST | `/api/v1/orders` | Create an order (`total` computed automatically) |
+| PUT | `/api/v1/orders/:id` | Update an order (`total` recomputed) |
+| DELETE | `/api/v1/orders/:id` | Delete an order |
+
+### Business logic
+
+`total = quantity × product.unit_price` — computed in the service layer on create and update. The client never sends `total`; it is always rejected.
+
+### Checklist
+
+- [ ] `POST` with unknown `product_id` returns `404`
+- [ ] `POST` without `quantity` returns `422`
+- [ ] Response `total` matches `quantity × unit_price`
+- [ ] Nested `customer`, `product`, and `product.category` present on responses
+- [ ] Unit and integration tests pass
 
 ---
 
 ## feature/api/auth
 
-**Endpoints:**
+Full RBAC + JWT authentication — register, account activation, login, logout, password reset.
+
+### Endpoints
 
 | Method | URL | Auth | Description |
 |---|---|---|---|
-| POST | `/api/auth/register` | No | Create account + send activation token |
-| GET | `/api/auth/activate/:token` | No | Activate account |
-| POST | `/api/auth/login` | No | Returns JWT |
-| POST | `/api/auth/logout` | Yes | Blacklists the token |
-| GET | `/api/auth/me` | Yes | Current user profile + roles |
-| POST | `/api/auth/forgot-password` | No | Send reset token |
-| POST | `/api/auth/reset-password/:token` | No | Set new password |
+| POST | `/api/v1/auth/register` | No | Create account + return activation token |
+| GET | `/api/v1/auth/activate/:token` | No | Activate account |
+| POST | `/api/v1/auth/login` | No | Returns JWT |
+| POST | `/api/v1/auth/logout` | Bearer JWT | Blacklists the current JWT |
+| POST | `/api/v1/auth/forgot-password` | No | Returns password reset token |
+| POST | `/api/v1/auth/reset-password` | No | Consume token, set new password |
+
+### Files (one commit each)
+
+Migrations (8) → Models (6) → Seeders (2) → Repositories (5) → `auth.middleware.js` → `auth.validation.js` → `auth.service.js` → `auth.controller.js` → `auth.routes.js` → `app.js` (mount)
+
+### Seeders
+
+- `20240101000004-seed-roles.js` — 2 roles: `admin`, `user`
+- `20240101000005-seed-permissions.js` — 20 permissions: 5 resources × 4 actions (create, read, update, delete)
+
+### Middleware (`auth.middleware.js`)
+
+```
+1. Extract Bearer token from Authorization header → 401 if missing
+2. jwt.verify(token, JWT_SECRET) → 401 if invalid or expired
+3. blacklistedTokenRepository.findByJti(decoded.jti) → 401 if found
+4. userRepository.findById(decoded.id) → 401 if not found
+5. Check user.enabled → 403 if false
+6. Check user.account_locked → 403 if true
+7. Attach req.user, req.token, req.tokenDecoded → next()
+```
+
+### Checklist
+
+- [ ] `POST /register` returns `activationToken` in response
+- [ ] `GET /activate/:token` sets `enabled = true` on the user
+- [ ] `POST /login` on inactive account returns `403`
+- [ ] `POST /logout` + subsequent request with same token returns `401`
+- [ ] `POST /forgot-password` returns `resetToken`
+- [ ] `POST /reset-password` with expired token returns `400`
+- [ ] Unit and integration tests pass
 
 ---
 
@@ -344,7 +583,7 @@ Old express-generator scaffold: `app.js`, `bin/`, `routes/`, `public/`, `models/
 ## feature/frontend/categories
 
 **Components:** `CategoryListComponent`, `CategoryFormComponent`, `CategoriesPageComponent`
-**Service:** `CategoryService` with `HttpClient`
+**Service:** `CategoryService` with `HttpClient` pointing to `/api/v1/categories`
 **Route:** lazy-loaded under `/categories`
 
 ---
@@ -358,13 +597,13 @@ Old express-generator scaffold: `app.js`, `bin/`, `routes/`, `public/`, `models/
 
 ## feature/frontend/customers
 
-Same CRUD pattern.
+Same CRUD pattern as categories.
 
 ---
 
 ## feature/frontend/orders
 
-**Extra:** Product and customer dropdowns in form. Automatic total display.
+**Extra:** Product and customer dropdowns in form. Automatic `total` display (computed from selected product price × quantity).
 
 ---
 
@@ -372,7 +611,7 @@ Same CRUD pattern.
 
 **Components:** `LoginComponent`, `RegisterComponent`
 **Guard:** `authGuard` (functional) protects all `/features/*` routes
-**Interceptor:** `jwtInterceptor` attaches `Authorization: Bearer <token>` header
+**Interceptor:** `jwtInterceptor` attaches `Authorization: Bearer <token>` header to every outgoing request
 
 ---
 
@@ -386,7 +625,7 @@ master
     ├── feature/api/products                ← 3rd
     ├── feature/api/customers               ← 4th
     ├── feature/api/orders                  ← 5th
-    ├── feature/api/auth                    ← 6th (last backend)
+    ├── feature/api/auth                    ← 6th  (last backend)
     ├── feature/frontend/core-architecture  ← 7th
     ├── feature/frontend/categories         ← 8th
     ├── feature/frontend/products           ← 9th
@@ -398,45 +637,29 @@ master
 **Rule:** Each branch is merged to `develop` only after:
 1. All unit tests pass (`yarn test:unit`)
 2. All integration tests pass (`yarn test:integration --passWithNoTests`)
-3. The `code-reviewer` agent has approved (no CRITICAL findings)
+3. No CRITICAL findings from the `code-reviewer` agent
 
 ---
 
 ## Code conventions
 
-### Commit format
+### Naming
 
-```
-<type>(<scope>): <short description>
+| Layer | Convention | Example |
+|---|---|---|
+| Files | kebab-case | `category.service.js` |
+| Functions | camelCase | `getAllCategories` |
+| Variables | camelCase | `categoryId` |
+| DB columns | snake_case | `category_name` |
+| Routes | kebab-case | `/api/v1/reset-password` |
 
-<pedagogical body — REQUIRED>
-Explain WHY this decision was made, the tradeoff, and the educational
-context. Aim for 3-5 paragraphs for structural files, 1 paragraph
-for simple files.
+### Error propagation
 
-No "Co-Authored-By: Anthropic" lines.
-```
+All async route handlers are wrapped in `catchAsync()`. Services throw plain `Error` objects with a `statusCode` property. The global `error.middleware.js` catches everything.
 
-**Types:** `feat`, `fix`, `chore`, `docs`, `test`, `refactor`, `ci`
+### No `total` from client
 
-**Atomicity rule:** One commit per file created or modified. Never `git add .` and commit multiple files of different natures together.
-
-### Example commit
-
-```
-feat(config): add src/config/env.js to centralize environment variables
-
-Reading process.env directly in multiple files leads to scattered defaults
-and makes it impossible to see at a glance what variables the application
-expects. Any typo in a variable name silently evaluates to undefined.
-
-env.js is the single source of truth: every process.env read happens here,
-with explicit defaults and type coercions (parseInt for numeric values).
-All other modules import from this file instead of process.env.
-
-This also makes the application's external contract obvious to contributors:
-they only need to look at one file to know what to put in .env.
-```
+The `total` field on orders is always computed server-side. Any `total` value sent by the client is silently ignored.
 
 ---
 
@@ -463,9 +686,15 @@ yarn install
 yarn start             # http://localhost:4200
 ```
 
-**Run database migrations:**
+**Run database migrations and seeders:**
 ```bash
 cd backend
 yarn db:migrate
 yarn db:seed
+```
+
+**Run tests:**
+```bash
+yarn test:unit
+yarn test:integration
 ```
