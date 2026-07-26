@@ -14,9 +14,11 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(passport.initialize());
 
-// Module routes are mounted here as they are created, e.g.:
-// app.use('/api/categories', require('./modules/categories/categories.routes'));
+const v1 = express.Router();
 
+// v1.use('/categories', categoriesRouter);
+
+app.use('/api/v1', v1);
 app.use(errorMiddleware);
 
 module.exports = app;
