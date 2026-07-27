@@ -58,11 +58,13 @@ Repository: https://github.com/EdgarEldy/mean_tutorial
 | Component | Choice | Version |
 |---|---|---|
 | Framework | Angular | ^21.0.0 |
-| UI Template | SB Admin 2 (Bootstrap 4) | 4.x |
+| UI | Angular Material (M3 theming) + CDK | ^21.0.0 |
 | HTTP Client | Angular HttpClient | built-in |
 | Forms | Angular Reactive Forms | built-in |
-| Notifications | ngx-toastr | latest |
-| Tests | Karma + Jasmine | Angular default |
+| Notifications | ngx-toastr | ^20.0.5 |
+| PDF export | jsPDF + jspdf-autotable | ^4.x / ^5.x |
+| Unit tests | Karma + Jasmine | Angular default |
+| E2E tests | Playwright | ^1.62.0 |
 | Package manager | yarn | 1.22.22 |
 
 ---
@@ -297,30 +299,33 @@ app.use('/api/v1', v1);
 ```
 src/
 ├── app/
-│   ├── app.component.ts           ← root component (RouterOutlet only)
-│   ├── app.config.ts              ← provideRouter, provideHttpClient
-│   └── app.routes.ts              ← top-level routes (lazy-loaded features)
-├── core/
-│   ├── services/api.service.ts    ← base HTTP service
-│   ├── interceptors/jwt.interceptor.ts
-│   └── guards/auth.guard.ts
-├── shared/
-│   ├── components/
-│   │   ├── sidebar/
-│   │   ├── topbar/
-│   │   └── footer/
-│   └── shared.module.ts
-├── features/
-│   ├── categories/
-│   │   ├── categories.routes.ts
-│   │   ├── services/category.service.ts
-│   │   ├── components/category-list/
-│   │   ├── components/category-form/
-│   │   └── pages/categories-page/
-│   ├── products/
-│   ├── customers/
-│   ├── orders/
-│   └── auth/
+│   ├── app.component.ts           ← root component (Material sidenav shell)
+│   ├── app.config.ts              ← provideRouter, provideHttpClient, provideAnimationsAsync, provideToastr
+│   ├── app.routes.ts              ← top-level routes (lazy-loaded features)
+│   ├── core/
+│   │   ├── models/api-response.model.ts   ← ApiResponse<T> envelope type
+│   │   ├── services/api.service.ts        ← generic HTTP service (returns ApiResponse<T>)
+│   │   ├── interceptors/jwt.interceptor.ts
+│   │   └── guards/auth.guard.ts
+│   ├── shared/
+│   │   └── components/
+│   │       ├── sidebar/           ← MatNavList
+│   │       ├── topbar/            ← MatToolbar + MatMenu
+│   │       ├── footer/
+│   │       └── data-table/        ← generic <T> table: client-side search, pagination, PDF export
+│   ├── pages/
+│   │   └── home/                  ← placeholder landing page for '/'
+│   └── features/
+│       ├── categories/
+│       │   ├── categories.routes.ts
+│       │   ├── services/category.service.ts
+│       │   ├── components/category-list/
+│       │   ├── components/category-form/
+│       │   └── pages/categories-page/
+│       ├── products/
+│       ├── customers/
+│       ├── orders/
+│       └── auth/
 └── environments/
     ├── environment.ts             ← { apiUrl: 'http://localhost:3001/api/v1' }
     └── environment.prod.ts
@@ -565,7 +570,7 @@ Migrations (8) → Models (6) → Seeders (2) → Repositories (5) → `auth.mid
 
 ## feature/frontend/core-architecture
 
-**Goal:** Migrate Angular 16 (NgModule) to Angular 21 (standalone components), reorganize into `core/`, `shared/`, `features/` structure.
+**Goal:** Migrate Angular 16 (NgModule) to Angular 21 (standalone components), reorganize into `core/`, `shared/`, `features/` structure, and fully replace the SB Admin 2 (Bootstrap 4 + jQuery + DataTables + ng-bootstrap) template with Angular Material. No feature UI (categories/products/customers/orders/auth) is rebuilt here — each gets its own branch — this branch is the technical foundation only.
 
 ### Key changes from Angular 16
 
@@ -577,6 +582,37 @@ Migrations (8) → Models (6) → Seeders (2) → Repositories (5) → `auth.mid
 | Class-based guards | Functional guards (`CanActivateFn`) |
 | `HttpInterceptor` class | Functional interceptors |
 | Builder: `browser` | Builder: `application` (esbuild) |
+| SB Admin 2 (Bootstrap 4 + jQuery + DataTables + ng-bootstrap) | Angular Material (M3 theming) + CDK |
+| `@Output() EventEmitter` | `output()` |
+| RxJS + `async` pipe for simple UI state | `signal()` / `computed()` / `toSignal()` |
+
+### Tasks
+
+- [x] Bump `@angular/*` to `^21.2.18`, add `@angular/material` + `@angular/cdk` (`^21.2.14`), drop `@ng-bootstrap/ng-bootstrap` + `bootstrap` + `@popperjs/core`
+- [x] Switch `angular.json` build/serve targets to the `application` (esbuild) builder
+- [x] Switch `tsconfig.json` to `moduleResolution: "bundler"` / `module: "preserve"` (required for Angular Material's `package.json` `exports`-based subpath resolution)
+- [x] Remove the entire SB Admin 2 asset bundle (`bootstrap*`, `jquery*`, `dataTables*`, `sb-admin-2*`, Font Awesome fonts) from `src/assets/`
+- [x] Remove the NgModule bootstrap (`app.module.ts`, `app-routing.module.ts`) and the old `pages/categories`, `pages/products`, `pages/dashboard`, root-level `services/`, `models/`
+- [x] Add standalone bootstrap: `main.ts` (`bootstrapApplication`), `app.config.ts` (`provideRouter`, `provideHttpClient` with the JWT interceptor, `provideAnimationsAsync`, `provideToastr`), `app.routes.ts`
+- [x] Rebuild `app.component.ts` as a `mat-sidenav-container` shell (responsive `side`/`over` mode via `BreakpointObserver` + `toSignal()`), composing `shared/components/{sidebar,topbar,footer}`
+- [x] Add `core/models/api-response.model.ts` (`ApiResponse<T>`) matching `backend/src/shared/utils/apiResponse.js`'s envelope
+- [x] Add `core/services/api.service.ts`: generic `HttpClient` wrapper over `environment.apiUrl`, returning the full `ApiResponse<T>` envelope (not unwrapped) so feature services can still surface `message`/`errors`
+- [x] Add `core/interceptors/jwt.interceptor.ts` and `core/guards/auth.guard.ts` as functional placeholders (both read/check a `localStorage` token; nothing sets one until `feature/frontend/auth`)
+- [x] Add `environments/environment.ts` / `environment.prod.ts` with `apiUrl: 'http://localhost:3001/api/v1'`
+- [x] Add a minimal `pages/home/` placeholder landing page for `/` (previous `DashboardComponent`'s stat cards had no real data behind them)
+- [x] Add `shared/components/data-table/`: a generic `<T>` Material table with client-side search (`MatTableDataSource` filter predicate), pagination (`MatPaginator`), and PDF export (`jsPDF` + `jspdf-autotable`, dynamically imported) — meant to be reused by every future feature list view instead of each branch rebuilding search/pagination/export from scratch
+- [x] Set up Angular Material M3 theming in `styles.scss` (`mat.theme()`, azure primary / magenta tertiary, Roboto typography)
+- [x] Set up Playwright (`playwright.config.ts`, `e2e/shell.spec.ts`) for end-to-end tests alongside Karma + Jasmine for unit tests
+- [x] Karma + Jasmine unit tests for every new component/service/guard/interceptor
+- [x] Code review pass (no CRITICAL findings after fixes)
+
+### Checklist
+
+- [x] `yarn install` succeeds
+- [x] `yarn start` serves the Material shell (sidebar/topbar/footer/home) without console errors
+- [x] `ng build` succeeds
+- [x] `yarn test` passes (30/30)
+- [x] `yarn e2e` passes (Playwright, 2/2)
 
 ---
 
