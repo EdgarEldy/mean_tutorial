@@ -89,4 +89,4 @@ jobs:
 
       - name: Unit tests
         working-directory: frontend
-        run: npm test -- --watch=false
+        run: npm test -- --watch=false --browsers=ChromeHeadless
