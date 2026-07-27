@@ -1,0 +1,24 @@
+<mat-card>
+  <mat-card-header>
+    <mat-card-title>Customers</mat-card-title>
+  </mat-card-header>
+
+  @if (loading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  <mat-card-content>
+    <div class="page-toolbar">
+      <button mat-raised-button color="primary" type="button" (click)="openCreateDialog()">
+        <mat-icon>add</mat-icon>
+        New customer
+      </button>
+    </div>
+
+    <app-customer-list
+      [customers]="customers()"
+      (edit)="openEditDialog($event)"
+      (delete)="confirmDelete($event)"
+    />
+  </mat-card-content>
+</mat-card>
