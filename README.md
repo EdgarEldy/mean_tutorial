@@ -686,7 +686,53 @@ cross-feature import: the product form needs a category dropdown.
 
 ## feature/frontend/customers
 
-Same CRUD pattern as categories.
+Third vertical slice, same CRUD pattern as categories/products but with the opposite
+validation shape: every field is optional at the backend, so the frontend form has no
+`Validators.required` at all, only format/length checks.
+
+### Endpoints consumed
+
+| Method | URL | Description |
+|---|---|---|
+| GET | `/api/v1/customers` | List all customers |
+| POST | `/api/v1/customers` | Create a customer (any/all fields may be omitted) |
+| PUT | `/api/v1/customers/:id` | Update a customer |
+| DELETE | `/api/v1/customers/:id` | Delete a customer |
+
+### Tasks
+
+- [x] Add `features/customers/models/customer.model.ts` (`Customer` with every field
+      `string | null`, `CustomerInput` as `Partial<Omit<Customer, 'id'>>`), mirroring
+      `customer.js`'s `allowNull: true` columns and `customer.validation.js`'s `.optional()`
+      rules
+- [x] Add `features/customers/services/customer.service.ts`: same shape as
+      `CategoryService`/`ProductService`, wraps `/customers`
+- [x] Add `features/customers/components/customer-form/`: Reactive Form with no
+      `Validators.required` anywhere, only `maxLength`/`email`/a permissive telephone pattern,
+      matching the backend's fully-optional validation
+- [x] Fix (caught in code review before merge): `submit()` now strips blank fields instead of
+      sending them as empty strings. `express-validator`'s `.optional()` only skips a field
+      when the key is entirely absent from the body, not when it's present as `''`, so an
+      unstripped payload would 422 on `isEmail('')` whenever email was left blank, defeating
+      the point of this branch
+- [x] Add `features/customers/components/customer-list/`: shared `DataTableComponent` wrapper
+      (name/email/telephone columns), each falling back to a placeholder instead of rendering
+      `null` for an unset field
+- [x] Add `features/customers/pages/customers-page/`: same page-level pattern as
+      categories/products
+- [x] Add `features/customers/customers.routes.ts` and wire it into `app.routes.ts` under
+      `/customers`; add the Customers link to the sidebar
+- [x] Karma + Jasmine unit tests for the service, form component (including the
+      strip-blank-fields fix), list component, and page component
+- [x] Code review pass (one CRITICAL finding: the blank-fields bug above, fixed before merge)
+
+### Checklist
+
+- [x] `ng build --configuration development` succeeds
+- [x] `yarn test` passes (179/179)
+- [ ] Manual check: create a customer with only some fields filled in, edit, delete, against
+      the running backend (not exercised in a browser yet, no MySQL instance was available in
+      the environment this branch was built in)
 
 ---
 

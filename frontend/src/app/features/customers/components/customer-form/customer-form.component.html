@@ -1,0 +1,56 @@
+<h2 mat-dialog-title>{{ isEditMode ? 'Edit customer' : 'New customer' }}</h2>
+
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <mat-dialog-content>
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>First name</mat-label>
+      <input matInput formControlName="first_name" maxlength="255" />
+      @if (form.controls.first_name.hasError('maxlength')) {
+        <mat-error>First name must be 255 characters or fewer.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Last name</mat-label>
+      <input matInput formControlName="last_name" maxlength="255" />
+      @if (form.controls.last_name.hasError('maxlength')) {
+        <mat-error>Last name must be 255 characters or fewer.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Telephone</mat-label>
+      <input matInput formControlName="telephone" maxlength="50" />
+      @if (form.controls.telephone.hasError('pattern')) {
+        <mat-error>Telephone may only contain digits, spaces, and + - . ( )</mat-error>
+      }
+      @if (form.controls.telephone.hasError('maxlength')) {
+        <mat-error>Telephone must be 50 characters or fewer.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Email</mat-label>
+      <input matInput type="email" formControlName="email" maxlength="255" />
+      @if (form.controls.email.hasError('email')) {
+        <mat-error>Enter a valid email address.</mat-error>
+      }
+      @if (form.controls.email.hasError('maxlength')) {
+        <mat-error>Email must be 255 characters or fewer.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Address</mat-label>
+      <input matInput formControlName="address" maxlength="255" />
+      @if (form.controls.address.hasError('maxlength')) {
+        <mat-error>Address must be 255 characters or fewer.</mat-error>
+      }
+    </mat-form-field>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="cancel()">Cancel</button>
+    <button mat-raised-button color="primary" type="submit">{{ isEditMode ? 'Save' : 'Create' }}</button>
+  </mat-dialog-actions>
+</form>
