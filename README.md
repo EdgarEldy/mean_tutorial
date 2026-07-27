@@ -738,7 +738,70 @@ validation shape: every field is optional at the backend, so the frontend form h
 
 ## feature/frontend/orders
 
-**Extra:** Product and customer dropdowns in form. Automatic `total` display (computed from selected product price × quantity).
+Fourth and most complex vertical slice: the only resource consumed over GraphQL instead of
+REST, a form with two cross-feature dropdowns and a live computed total, and a functional
+route resolver for a deep-link-to-edit URL.
+
+### GraphQL operations consumed
+
+| Operation | Name | Description |
+|---|---|---|
+| Query | `orders` | List all orders |
+| Query | `order(id)` | Single order, used by the edit-deep-link resolver |
+| Mutation | `createOrder(input)` | Create an order |
+| Mutation | `updateOrder(id, input)` | Update an order |
+| Mutation | `deleteOrder(id)` | Delete an order |
+
+### Tasks
+
+- [x] Add `core/services/graphql.service.ts` + `core/models/graphql-response.model.ts`: a
+      thin POST wrapper around `/api/v1/graphql`, the GraphQL counterpart to `ApiService`.
+      Treats a non-empty `errors` array as the primary failure signal instead of HTTP status,
+      since Apollo Server returns 200 even when a resolver throws
+- [x] Add `features/orders/models/order.model.ts`: `Order.id` and nested `customer.id`/
+      `product.id` are typed `string` (GraphQL's `ID` scalar always serializes as a string),
+      unlike the REST features where ids are `number`
+- [x] Add `features/orders/services/order.service.ts`: uses `GraphqlService` instead of
+      `ApiService`, otherwise the same unwrap + toast + rethrow shape as the REST feature
+      services
+- [x] Add `features/orders/components/order-form/`: two cross-feature dropdowns
+      (`CustomerService`/`ProductService`, reusing the existing REST services rather than
+      re-fetching over GraphQL), coercing the order's string ids to numbers in edit mode
+      (`Number(order.customer?.id)`) so `mat-select`'s strict-equality value matching finds
+      the pre-filled option. A `computed()` `total` derived from `toSignal()`'d
+      `product_id`/`quantity` value changes mirrors the server-side `quantity × unit_price`
+      calculation live, before the order is even submitted
+- [x] Add `features/orders/components/order-list/`: shared `DataTableComponent` wrapper
+      (customer/product/quantity/total columns, each falling back since `customer`/`product`
+      are nullable in the GraphQL schema) plus a `computed()` total revenue
+- [x] Add `features/orders/pages/orders-page/`: same page-level pattern as the other
+      features, plus handling for a resolver-driven deep link (see below)
+- [x] Add `features/orders/order.resolver.ts`: a functional `ResolveFn` that preloads an
+      order for the `/orders/:id/edit` route before it activates, falling back to `/orders`
+      if the id doesn't resolve
+- [x] Add `features/orders/orders.routes.ts` (`''` and `':id/edit'`, both `loadComponent()`
+      the same page) and wire it into `app.routes.ts`; add the Orders link to the sidebar
+- [x] Fix (caught in code review before merge): the page originally read the resolved order
+      from a one-time `ngOnInit` snapshot. Since `''` and `:id/edit` both load the same
+      component, Angular's default route reuse strategy can keep that instance alive across
+      navigations between two different edit deep links without re-running `ngOnInit`,
+      silently missing the second one. Switched to reading `route.data` reactively via
+      `toSignal()` plus an `effect()`, and navigate back to `/orders` once the deep-linked
+      dialog closes so the URL doesn't keep pointing at a route with nothing open
+- [x] Karma + Jasmine unit tests for `GraphqlService`, `OrderService`, the form (including a
+      dedicated regression test for the string-vs-number id coercion), the list, the page
+      (including the deep-link flow), and the resolver
+- [x] Code review pass (no CRITICAL findings; two WARNINGs on the resolver/route-reuse
+      interaction fixed before merge, see above)
+
+### Checklist
+
+- [x] `ng build --configuration development` succeeds
+- [x] `yarn test` passes (241/241)
+- [ ] Manual check: create/edit/delete an order (including the live total and the
+      `/orders/:id/edit` deep link) against the running backend and its `/api/v1/graphql`
+      endpoint (not exercised in a browser yet, no MySQL instance was available in the
+      environment this branch was built in)
 
 ---
 
