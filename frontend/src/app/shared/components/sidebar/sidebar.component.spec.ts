@@ -15,7 +15,7 @@ describe('SidebarComponent', () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('should render Home, Categories and Products nav links', () => {
+  it('should render Home, Categories, Products and Customers nav links', () => {
     const fixture = TestBed.createComponent(SidebarComponent);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
@@ -24,7 +24,7 @@ describe('SidebarComponent', () => {
     expect(navList).toBeTruthy();
 
     const links = compiled.querySelectorAll('a[mat-list-item]');
-    expect(links.length).toBe(3);
+    expect(links.length).toBe(4);
 
     expect(links[0].getAttribute('ng-reflect-router-link') ?? links[0].getAttribute('href')).toBeTruthy();
     expect(links[0].textContent).toContain('Home');
@@ -34,6 +34,9 @@ describe('SidebarComponent', () => {
 
     expect(links[2].getAttribute('ng-reflect-router-link') ?? links[2].getAttribute('href')).toBeTruthy();
     expect(links[2].textContent).toContain('Products');
+
+    expect(links[3].getAttribute('ng-reflect-router-link') ?? links[3].getAttribute('href')).toBeTruthy();
+    expect(links[3].textContent).toContain('Customers');
   });
 
   it('should render the brand name', () => {
