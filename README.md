@@ -653,8 +653,34 @@ using Reactive Forms, a MatDialog form, and the shared `DataTableComponent`.
 
 ## feature/frontend/products
 
-**Components:** `ProductListComponent`, `ProductFormComponent`, `ProductsPageComponent`
-**Extra:** Category dropdown in form (cross-feature import allowed in form only)
+Second vertical slice, same CRUD pattern as categories plus the codebase's one sanctioned
+cross-feature import: the product form needs a category dropdown.
+
+### Endpoints consumed
+
+| Method | URL | Description |
+|---|---|---|
+| GET | `/api/v1/products` | List all products (nested `category` included) |
+| POST | `/api/v1/products` | Create a product (response has no nested `category`) |
+| PUT | `/api/v1/products/:id` | Update a product (nested `category` included) |
+| DELETE | `/api/v1/products/:id` | Delete a product |
+
+### Tasks
+
+- [x] Add `features/products/models/product.model.ts` (`Product`, `ProductInput`); `category` is optional and typed with a locally-declared shape (not imported from the categories feature) since only `product.repository.js`'s `findAll`/`findById` eager-load the association, `create` does not
+- [x] Add `features/products/services/product.service.ts`: same shape as `CategoryService`, wraps `/products`
+- [x] Add `features/products/components/product-form/`: Reactive Form (`product_name` required + `maxLength(255)`, `unit_price` required + `min(0)`, `category_id` required + `min(1)`) mirroring `product.validation.js`. Loads categories via `CategoryService.getAll()` (the one sanctioned cross-feature import) through a `shareReplay(1)` observable exposed with `toSignal()`, and adds an `AsyncValidatorFn` on `category_id` that re-checks the selected id against that same shared observable instead of a fresh request per keystroke, guarding against a category deleted between page load and submit
+- [x] Add `features/products/components/product-list/`: shared `DataTableComponent` wrapper (name/category/unit price columns) with a `computed()` product count; category name read straight off the row (already resolved by the backend), falling back to "Uncategorized" for a freshly created row
+- [x] Add `features/products/pages/products-page/`: same page-level pattern as categories (list state via `signal()`, form + confirm dialogs, reload after mutation)
+- [x] Add `features/products/products.routes.ts` and wire it into `app.routes.ts` under `/products`; add the Products link to the sidebar
+- [x] Karma + Jasmine unit tests for the service, form component (including the async validator and the `form.invalid || form.pending` guard in `submit()`), list component, and page component
+- [x] Code review pass (no CRITICAL findings; hardened `submit()` to also check `form.pending` since `form.invalid` alone doesn't cover a still-resolving async validator)
+
+### Checklist
+
+- [x] `ng build --configuration development` succeeds
+- [x] `yarn test` passes (125/125)
+- [ ] Manual check: create, edit, delete (including the category dropdown and its async validation) against the running backend (not exercised in a browser yet, no MySQL instance was available in the environment this branch was built in)
 
 ---
 
