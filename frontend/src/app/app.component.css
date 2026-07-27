@@ -1,0 +1,18 @@
+.app-shell {
+  height: 100vh;
+}
+
+.app-sidenav {
+  width: 240px;
+}
+
+.app-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-main {
+  flex: 1 1 auto;
+  padding: 24px;
+}
