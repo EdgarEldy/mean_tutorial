@@ -16,9 +16,10 @@ describe('CategoryListComponent', () => {
     }),
   );
 
-  function createComponent() {
+  function createComponent(isAdmin = true) {
     const fixture = TestBed.createComponent(CategoryListComponent);
     fixture.componentRef.setInput('categories', categories);
+    fixture.componentRef.setInput('isAdmin', isAdmin);
     return fixture;
   }
 
@@ -37,13 +38,29 @@ describe('CategoryListComponent', () => {
     expect(columns[0].value(categories[0])).toBe('Books');
   });
 
-  it('should wire edit and delete row actions', () => {
+  it('should wire edit and delete row actions when isAdmin is true', () => {
     const fixture = createComponent();
-    const actions = fixture.componentInstance['actions'];
+    const actions = fixture.componentInstance['actions']();
 
     expect(actions.length).toBe(2);
     expect(actions[0].icon).toBe('edit');
     expect(actions[1].icon).toBe('delete');
+  });
+
+  it('should expose no actions when isAdmin is false (the default)', () => {
+    const fixture = createComponent(false);
+
+    expect(fixture.componentInstance['actions']()).toEqual([]);
+  });
+
+  it('should hide the actions column entirely and render no edit/delete buttons when isAdmin is false', () => {
+    const fixture = createComponent(false);
+    fixture.detectChanges();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelectorAll('button[aria-label="Edit"]').length).toBe(0);
+    expect(compiled.querySelectorAll('button[aria-label="Delete"]').length).toBe(0);
   });
 
   it('should render one row per category via the shared data table', () => {
@@ -61,7 +78,7 @@ describe('CategoryListComponent', () => {
     const emitSpy = jasmine.createSpy('edit');
     fixture.componentInstance.edit.subscribe(emitSpy);
 
-    fixture.componentInstance['actions'][0].handler(categories[1]);
+    fixture.componentInstance['actions']()[0].handler(categories[1]);
 
     expect(emitSpy).toHaveBeenCalledWith(categories[1]);
   });
@@ -71,7 +88,7 @@ describe('CategoryListComponent', () => {
     const emitSpy = jasmine.createSpy('delete');
     fixture.componentInstance.delete.subscribe(emitSpy);
 
-    fixture.componentInstance['actions'][1].handler(categories[0]);
+    fixture.componentInstance['actions']()[1].handler(categories[0]);
 
     expect(emitSpy).toHaveBeenCalledWith(categories[0]);
   });
