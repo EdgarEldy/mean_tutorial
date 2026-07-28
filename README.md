@@ -879,9 +879,13 @@ was explicitly deferred rather than folded into this branch.
       clears the session and redirects to `/login` on a 401
 - [x] Add `features/auth/`: `AuthService` (register/activate/login/forgotPassword/
       resetPassword against `/auth`), and five pages (login, register, activate,
-      forgot-password, reset-password). Since the backend has no email service, register/
-      forgot-password responses embed the activation/reset token directly, and the
-      corresponding pages surface a direct link instead of "check your email"
+      forgot-password, reset-password)
+- [x] Follow-up once `feature/api/auth` added real email delivery (see that section): the
+      backend no longer returns the activation/reset token in the response body at all, so
+      `register-page`/`forgot-password-page` were updated to drop the "here's your token
+      directly" shortcut and just show a "check your email" confirmation instead. Their
+      `RegisterResult`/`ForgotPasswordResult` models and specs were updated to match the new
+      byte-identical-either-way response shape
 - [x] Add `shared/validators/passwords-match.validator.ts`, shared by the register and
       reset-password forms
 - [x] Wire real login/logout state into `shared/components/topbar/`, replacing the disabled
@@ -902,10 +906,13 @@ was explicitly deferred rather than folded into this branch.
 ### Checklist
 
 - [x] `ng build --configuration development` succeeds
-- [x] `yarn test` passes (322/322)
-- [ ] Manual check: register, activate, login, logout, forgot/reset password, and the
-      isAdmin-gated UI against the running backend (not exercised in a browser yet, no MySQL
-      instance was available in the environment this branch was built in)
+- [x] `yarn test` passes (321/321)
+- [x] The full backend flow (register → MailHog receives the activation email → activate →
+      login → forgot-password → MailHog receives the reset email → reset-password → login
+      with the new password) was manually verified end-to-end against a live MySQL + MailHog
+      instance via direct API calls
+- [ ] Manual check of the Angular pages themselves (clicking through register/login/forgot/
+      reset and the isAdmin-gated UI in an actual browser) has not been done yet
 
 ---
 
