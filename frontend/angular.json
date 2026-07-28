@@ -11,11 +11,11 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:browser",
+          "builder": "@angular-devkit/build-angular:application",
           "options": {
             "outputPath": "dist/frontend",
             "index": "src/index.html",
-            "main": "src/main.ts",
+            "browser": "src/main.ts",
             "polyfills": [
               "zone.js"
             ],
@@ -25,21 +25,10 @@
               "src/assets"
             ],
             "styles": [
-              "src/styles.css",
-              "src/assets/css/all.css",
-              "src/assets/css/bootstrap.min.css",
-              "src/assets/css/sb-admin-2.min.css",
-              "src/assets/css/dataTables.bootstrap4.min.css",
-              "src/assets/css/main.css",
+              "src/styles.scss",
               "node_modules/ngx-toastr/toastr.css"
             ],
-            "scripts": [
-              "src/assets/js/jquery.min.js",
-              "src/assets/js/bootstrap.bundle.min.js",
-              "src/assets/js/dataTables.min.js",
-              "src/assets/js/dataTables.bootstrap4.min.js",
-              "src/assets/js/sb-admin-2.min.js"
-            ]
+            "scripts": []
           },
           "configurations": {
             "production": {
@@ -51,16 +40,14 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "2kb",
-                  "maximumError": "4kb"
+                  "maximumWarning": "4kb",
+                  "maximumError": "8kb"
                 }
               ],
               "outputHashing": "all"
             },
             "development": {
-              "buildOptimizer": false,
               "optimization": false,
-              "vendorChunk": true,
               "extractLicenses": false,
               "sourceMap": true,
               "namedChunks": true
@@ -72,19 +59,13 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "browserTarget": "frontend:build:production"
+              "buildTarget": "frontend:build:production"
             },
             "development": {
-              "browserTarget": "frontend:build:development"
+              "buildTarget": "frontend:build:development"
             }
           },
           "defaultConfiguration": "development"
-        },
-        "extract-i18n": {
-          "builder": "@angular-devkit/build-angular:extract-i18n",
-          "options": {
-            "browserTarget": "frontend:build"
-          }
         },
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
@@ -99,7 +80,7 @@
               "src/assets"
             ],
             "styles": [
-              "src/styles.css"
+              "src/styles.scss"
             ],
             "scripts": []
           }

@@ -1,0 +1,43 @@
+<div class="toolbar">
+  <mat-form-field appearance="outline" class="search-field">
+    <mat-label>{{ searchPlaceholder() }}</mat-label>
+    <mat-icon matPrefix>search</mat-icon>
+    <input matInput (input)="applyFilter($any($event.target).value)" />
+  </mat-form-field>
+
+  <button mat-stroked-button type="button" (click)="exportPdf()">
+    <mat-icon>picture_as_pdf</mat-icon>
+    Export PDF
+  </button>
+</div>
+
+<table mat-table [dataSource]="dataSource" class="data-table">
+  @for (column of columns(); track column.key) {
+    <ng-container [matColumnDef]="column.key">
+      <th mat-header-cell *matHeaderCellDef>{{ column.header }}</th>
+      <td mat-cell *matCellDef="let row">{{ column.value(row) }}</td>
+    </ng-container>
+  }
+
+  @if (actions().length) {
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef="let row">
+        @for (action of actions(); track action.label) {
+          <button mat-icon-button type="button" [attr.aria-label]="action.label" (click)="action.handler(row)">
+            <mat-icon>{{ action.icon }}</mat-icon>
+          </button>
+        }
+      </td>
+    </ng-container>
+  }
+
+  <tr mat-header-row *matHeaderRowDef="displayedColumns()"></tr>
+  <tr mat-row *matRowDef="let row; columns: displayedColumns()"></tr>
+
+  <tr class="no-data-row" *matNoDataRow>
+    <td [attr.colspan]="displayedColumns().length">No data.</td>
+  </tr>
+</table>
+
+<mat-paginator [pageSizeOptions]="[5, 10, 25]" showFirstLastButtons></mat-paginator>

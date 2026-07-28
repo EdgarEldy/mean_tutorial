@@ -1,0 +1,13 @@
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 64px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.active-link {
+  background: color-mix(in srgb, var(--mat-sys-primary) 12%, transparent);
+}

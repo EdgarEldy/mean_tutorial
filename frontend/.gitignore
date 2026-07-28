@@ -37,12 +37,15 @@ yarn-error.log
 testem.log
 /typings
 
+# Playwright
+/test-results
+/playwright-report
+/blob-report
+/playwright/.cache
+
 # System files
 .DS_Store
 Thumbs.db
 
 # yarn.lock
 yarn.lock
-
-# package-lock.json
-package-lock.json

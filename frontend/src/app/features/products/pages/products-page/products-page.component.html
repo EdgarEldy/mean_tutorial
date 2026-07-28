@@ -1,0 +1,27 @@
+<mat-card>
+  <mat-card-header>
+    <mat-card-title>Products</mat-card-title>
+  </mat-card-header>
+
+  @if (loading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  <mat-card-content>
+    @if (isAdmin()) {
+      <div class="page-toolbar">
+        <button mat-raised-button color="primary" type="button" (click)="openCreateDialog()">
+          <mat-icon>add</mat-icon>
+          New product
+        </button>
+      </div>
+    }
+
+    <app-product-list
+      [products]="products()"
+      [isAdmin]="isAdmin()"
+      (edit)="openEditDialog($event)"
+      (delete)="confirmDelete($event)"
+    />
+  </mat-card-content>
+</mat-card>
