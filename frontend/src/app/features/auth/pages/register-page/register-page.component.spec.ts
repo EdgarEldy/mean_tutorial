@@ -52,7 +52,9 @@ describe('RegisterPageComponent', () => {
     });
 
     it('should allow submit once the passwords match', () => {
-      authServiceSpy.register.and.returnValue(of({ activationToken: 'tok' }));
+      authServiceSpy.register.and.returnValue(
+        of({ id: 1, first_name: 'Ada', last_name: 'Lovelace', email: 'ada@example.com', enabled: false, account_locked: false }),
+      );
 
       const fixture = createComponent();
       fixture.detectChanges();
@@ -99,7 +101,9 @@ describe('RegisterPageComponent', () => {
     });
 
     it('should strip confirmPassword from the payload sent to authService.register()', () => {
-      authServiceSpy.register.and.returnValue(of({ activationToken: 'tok' }));
+      authServiceSpy.register.and.returnValue(
+        of({ id: 1, first_name: 'Ada', last_name: 'Lovelace', email: 'ada@example.com', enabled: false, account_locked: false }),
+      );
 
       const fixture = createComponent();
       fixture.detectChanges();
@@ -116,7 +120,14 @@ describe('RegisterPageComponent', () => {
     });
 
     it('should set the registered signal to the result on success instead of navigating away', () => {
-      const result: RegisterResult = { activationToken: 'tok-123' };
+      const result: RegisterResult = {
+        id: 1,
+        first_name: 'Ada',
+        last_name: 'Lovelace',
+        email: 'ada@example.com',
+        enabled: false,
+        account_locked: false,
+      };
       authServiceSpy.register.and.returnValue(of(result));
 
       const fixture = createComponent();
