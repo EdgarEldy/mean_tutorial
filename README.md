@@ -528,11 +528,11 @@ Full RBAC + JWT authentication — register, account activation, login, logout, 
 
 | Method | URL | Auth | Description |
 |---|---|---|---|
-| POST | `/api/v1/auth/register` | No | Create account + return activation token |
+| POST | `/api/v1/auth/register` | No | Create account, email an activation link, return the safe user (no token, no password) |
 | GET | `/api/v1/auth/activate/:token` | No | Activate account |
-| POST | `/api/v1/auth/login` | No | Returns JWT |
+| POST | `/api/v1/auth/login` | No | Returns JWT + user (with roles) |
 | POST | `/api/v1/auth/logout` | Bearer JWT | Blacklists the current JWT |
-| POST | `/api/v1/auth/forgot-password` | No | Returns password reset token |
+| POST | `/api/v1/auth/forgot-password` | No | Email a reset link if the account exists; same generic response either way |
 | POST | `/api/v1/auth/reset-password` | No | Consume token, set new password |
 
 ### Files (one commit each)
@@ -556,15 +556,44 @@ Migrations (8) → Models (6) → Seeders (2) → Repositories (5) → `auth.mid
 7. Attach req.user, req.token, req.tokenDecoded → next()
 ```
 
+### Email delivery (`shared/utils/mailer.js`)
+
+`register`/`forgot-password` originally returned the activation/reset token directly in the
+API response, with response messages that said "check your email" while no email was ever
+sent. Fixed by adding a thin `nodemailer` wrapper (`SMTP_HOST`/`SMTP_PORT`/`MAIL_FROM` in
+`.env`, defaults point at [MailHog](https://github.com/mailhog/MailHog) on `127.0.0.1:1025`)
+and having both endpoints actually send an email whose link points at `FRONTEND_URL` (the
+Angular app, default `http://localhost:4200`) instead of exposing the token in the response.
+In dev, view "sent" mail at MailHog's UI on `http://localhost:8025`.
+
+Fixed alongside this: `forgotPassword` used to return `{ resetToken }` when the account
+existed and `null` when it didn't — a response-shape enumeration leak on top of the
+intentionally generic message. It now returns nothing in either case, so the HTTP response is
+byte-identical regardless of whether the account exists; only the side effect (an email being
+sent or not) differs.
+
+### Bug fixed: `role_user`/`role_permission` missing timestamps
+
+`user.addRole(roleId)` (called from `register()`) threw `Unknown column 'createdAt' in 'field
+list'` on **every** registration attempt, because
+`20240101000008-create-role-user.js`/`20240101000009-create-role-permission.js` never created
+`createdAt`/`updatedAt` columns on those join tables, while the `belongsToMany` associations
+in `user.js`/`role.js` don't disable timestamps. This meant nobody could ever successfully
+register — never caught because there was no integration test for this module at all.
+Fixed by adding the missing columns directly to both migration files (not a new migration:
+the original migration could never have produced a working role assignment anyway, so there's
+no real environment this could regress — anyone with a pre-existing local DB predating this
+fix should `db:migrate:undo` those two migrations and re-run `db:migrate`).
+
 ### Checklist
 
-- [ ] `POST /register` returns `activationToken` in response
-- [ ] `GET /activate/:token` sets `enabled = true` on the user
-- [ ] `POST /login` on inactive account returns `403`
-- [ ] `POST /logout` + subsequent request with same token returns `401`
-- [ ] `POST /forgot-password` returns `resetToken`
-- [ ] `POST /reset-password` with expired token returns `400`
-- [ ] Unit and integration tests pass
+- [x] `POST /register` sends an activation email and returns the safe user (no token, no password)
+- [x] `GET /activate/:token` sets `enabled = true` on the user
+- [x] `POST /login` on inactive account returns `403`; on success returns `user.roles` populated (regression-tests the join-table fix above)
+- [x] `POST /logout` + subsequent request with same token returns `401`
+- [x] `POST /forgot-password` sends a reset email only when the account exists, but returns the identical response either way (regression-tests the enumeration-leak fix above)
+- [x] `POST /reset-password` with expired token returns `400`
+- [x] Unit and integration tests pass (`tests/unit/auth.service.test.js`, `tests/integration/auth.test.js` — the latter verifies real email delivery via MailHog's HTTP API)
 
 ---
 

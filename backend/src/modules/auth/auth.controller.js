@@ -7,8 +7,8 @@ const catchAsync  = require('../../shared/utils/catchAsync');
 const register = catchAsync(async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return apiResponse.error(res, 'Validation failed', 422, errors.array());
-  const result = await authService.register(req.body);
-  return apiResponse.success(res, 'Registration successful. Check your email to activate your account.', { activationToken: result.activationToken }, 201);
+  const user = await authService.register(req.body);
+  return apiResponse.success(res, 'Registration successful. Check your email to activate your account.', user, 201);
 });
 
 const activate = catchAsync(async (req, res) => {
@@ -31,8 +31,8 @@ const logout = catchAsync(async (req, res) => {
 const forgotPassword = catchAsync(async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return apiResponse.error(res, 'Validation failed', 422, errors.array());
-  const result = await authService.forgotPassword({ email: req.body.email });
-  return apiResponse.success(res, 'If this email exists, a reset link has been sent', result || null);
+  await authService.forgotPassword({ email: req.body.email });
+  return apiResponse.success(res, 'If this email exists, a reset link has been sent');
 });
 
 const resetPassword = catchAsync(async (req, res) => {
