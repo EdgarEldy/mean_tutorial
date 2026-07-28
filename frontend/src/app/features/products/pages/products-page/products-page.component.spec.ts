@@ -1,7 +1,9 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { Observable, Subject, of, throwError } from 'rxjs';
+import { AuthStateService } from '../../../../core/services/auth-state.service';
 import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { ProductFormComponent } from '../../components/product-form/product-form.component';
 import { Product } from '../../models/product.model';
@@ -18,6 +20,7 @@ describe('ProductsPageComponent', () => {
   let dialogSpy: jasmine.SpyObj<MatDialog>;
   let afterClosedSubject: Subject<unknown>;
   let dialogRefStub: { afterClosed: () => Observable<unknown> };
+  let authStateStub: { isAdmin: ReturnType<typeof signal<boolean>> };
 
   beforeEach(() => {
     productServiceSpy = jasmine.createSpyObj<ProductService>('ProductService', [
@@ -33,12 +36,16 @@ describe('ProductsPageComponent', () => {
     dialogSpy = jasmine.createSpyObj<MatDialog>('MatDialog', ['open']);
     dialogSpy.open.and.returnValue(dialogRefStub as MatDialogRef<unknown>);
 
+    // isAdmin defaults to true so the pre-existing "New product" button tests keep finding it.
+    authStateStub = { isAdmin: signal(true) };
+
     TestBed.configureTestingModule({
       imports: [ProductsPageComponent],
       providers: [
         provideNoopAnimations(),
         { provide: ProductService, useValue: productServiceSpy },
         { provide: MatDialog, useValue: dialogSpy },
+        { provide: AuthStateService, useValue: authStateStub },
       ],
     });
   });
@@ -208,6 +215,28 @@ describe('ProductsPageComponent', () => {
 
       expect(productServiceSpy.delete).toHaveBeenCalled();
       expect(productServiceSpy.getAll).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('isAdmin gating', () => {
+    it('should show the "New product" button when the user is admin', () => {
+      const fixture = createComponent();
+      fixture.detectChanges();
+
+      const compiled = fixture.nativeElement as HTMLElement;
+      const buttons = Array.from(compiled.querySelectorAll('button')).map((b) => b.textContent?.trim());
+      expect(buttons.some((text) => text?.includes('New product'))).toBeTrue();
+    });
+
+    it('should hide the "New product" button when the user is not admin', () => {
+      authStateStub.isAdmin.set(false);
+
+      const fixture = createComponent();
+      fixture.detectChanges();
+
+      const compiled = fixture.nativeElement as HTMLElement;
+      const buttons = Array.from(compiled.querySelectorAll('button')).map((b) => b.textContent?.trim());
+      expect(buttons.some((text) => text?.includes('New product'))).toBeFalse();
     });
   });
 });
