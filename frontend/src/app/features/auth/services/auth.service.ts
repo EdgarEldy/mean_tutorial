@@ -8,7 +8,6 @@ import { ApiService } from '../../../core/services/api.service';
 import { AuthStateService } from '../../../core/services/auth-state.service';
 import {
   ForgotPasswordInput,
-  ForgotPasswordResult,
   LoginInput,
   RegisterInput,
   RegisterResult,
@@ -54,10 +53,10 @@ export class AuthService {
     );
   }
 
-  forgotPassword(data: ForgotPasswordInput): Observable<ForgotPasswordResult | null> {
-    return this.api.post<ForgotPasswordResult | null>(`${this.basePath}/forgot-password`, data).pipe(
+  forgotPassword(data: ForgotPasswordInput): Observable<void> {
+    return this.api.post<void>(`${this.basePath}/forgot-password`, data).pipe(
       tap((response) => this.toastr.success(response.message)),
-      map((response) => response.data ?? null),
+      map(() => undefined),
       catchError((error) => this.handleError(error)),
     );
   }

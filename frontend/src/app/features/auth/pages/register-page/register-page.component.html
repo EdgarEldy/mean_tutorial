@@ -2,18 +2,14 @@
   <mat-card class="auth-card">
     @if (registered(); as result) {
       <mat-card-header>
-        <mat-card-title>Check your account</mat-card-title>
+        <mat-card-title>Check your email</mat-card-title>
       </mat-card-header>
 
       <mat-card-content>
-        <p>
-          This tutorial has no real email service, so instead of emailing you an activation
-          link, here it is directly:
-        </p>
-        <a mat-raised-button color="primary" class="full-width" [routerLink]="['/auth/activate', result.activationToken]">
-          <mat-icon>mark_email_read</mat-icon>
-          Activate my account
-        </a>
+        <p>We've sent an activation link to <strong>{{ result.email }}</strong>. Follow it to activate your account.</p>
+        <div class="auth-links">
+          <a routerLink="/login">Back to login</a>
+        </div>
       </mat-card-content>
     } @else {
       <mat-card-header>

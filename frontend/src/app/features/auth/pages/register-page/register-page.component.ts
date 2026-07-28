@@ -3,28 +3,18 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { RouterLink } from '@angular/router';
 import { passwordsMatchValidator } from '../../../../shared/validators/passwords-match.validator';
 import { RegisterResult } from '../../models/auth.model';
 import { AuthService } from '../../services/auth.service';
 
-// Public page for creating an account. The backend has no email service (auth.service.js's
-// register() returns the activation token directly instead of sending it), so instead of
-// telling the user to "check their email", this shows a link straight to the activate page
-// once registration succeeds.
+// Public page for creating an account. The backend emails the activation link directly (see
+// auth.service.js's register()), so this only has to show a confirmation once registration
+// succeeds; it never sees the activation token itself.
 @Component({
   selector: 'app-register-page',
-  imports: [
-    ReactiveFormsModule,
-    MatCardModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatIconModule,
-    RouterLink,
-  ],
+  imports: [ReactiveFormsModule, MatCardModule, MatFormFieldModule, MatInputModule, MatButtonModule, RouterLink],
   templateUrl: './register-page.component.html',
   styleUrl: './register-page.component.css',
 })

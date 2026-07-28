@@ -19,14 +19,15 @@ export interface ResetPasswordInput {
   password: string;
 }
 
-// The backend's register/forgot-password responses say "check your email", but this tutorial
-// has no email service wired up (see auth.service.js's register()/forgotPassword()), so the
-// activation/reset token is returned directly in the response body instead, for the pages to
-// surface to the user in place of an actual email link.
+// The backend now actually emails the activation link (see auth.service.js's register()) and
+// returns the created user (no password, no token) instead. forgot-password returns nothing at
+// all, on success or failure, so the response is byte-identical whether or not the account
+// exists.
 export interface RegisterResult {
-  activationToken: string;
-}
-
-export interface ForgotPasswordResult {
-  resetToken?: string;
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  enabled: boolean;
+  account_locked: boolean;
 }

@@ -6,7 +6,7 @@ import { ApiResponse } from '../../../core/models/api-response.model';
 import { AuthUser } from '../../../core/models/auth-user.model';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthStateService } from '../../../core/services/auth-state.service';
-import { ForgotPasswordResult, RegisterResult } from '../models/auth.model';
+import { RegisterResult } from '../models/auth.model';
 import { AuthService } from './auth.service';
 
 const user: AuthUser = {
@@ -47,8 +47,15 @@ describe('AuthService', () => {
   describe('register', () => {
     const input = { first_name: 'Ada', last_name: 'Lovelace', email: 'ada@example.com', password: 'Passw0rd1' };
 
-    it('should post the payload, toast success and return the unwrapped activation token', (done) => {
-      const result: RegisterResult = { activationToken: 'tok-123' };
+    it('should post the payload, toast success and return the unwrapped safe user', (done) => {
+      const result: RegisterResult = {
+        id: 1,
+        first_name: 'Ada',
+        last_name: 'Lovelace',
+        email: 'ada@example.com',
+        enabled: false,
+        account_locked: false,
+      };
       const response: ApiResponse<RegisterResult> = { success: true, message: 'Registered', data: result };
       apiServiceSpy.post.and.returnValue(of(response));
 
@@ -147,25 +154,14 @@ describe('AuthService', () => {
   });
 
   describe('forgotPassword', () => {
-    it('should toast success and return the reset token when the response includes one', (done) => {
-      const result: ForgotPasswordResult = { resetToken: 'reset-123' };
-      const response: ApiResponse<ForgotPasswordResult> = { success: true, message: 'Check your email', data: result };
+    it('should post the payload, toast success and complete with undefined', (done) => {
+      const response: ApiResponse<void> = { success: true, message: 'Check your email' };
       apiServiceSpy.post.and.returnValue(of(response));
 
       service.forgotPassword({ email: user.email }).subscribe((res) => {
         expect(apiServiceSpy.post).toHaveBeenCalledWith('/auth/forgot-password', { email: user.email });
         expect(toastrSpy.success).toHaveBeenCalledWith('Check your email');
-        expect(res).toEqual(result);
-        done();
-      });
-    });
-
-    it('should return null when response.data is missing', (done) => {
-      const response: ApiResponse<ForgotPasswordResult> = { success: true, message: 'Check your email' };
-      apiServiceSpy.post.and.returnValue(of(response));
-
-      service.forgotPassword({ email: user.email }).subscribe((res) => {
-        expect(res).toBeNull();
+        expect(res).toBeUndefined();
         done();
       });
     });
