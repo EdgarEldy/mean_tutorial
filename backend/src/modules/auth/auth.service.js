@@ -2,14 +2,32 @@
 const bcrypt = require('bcryptjs');
 const jwt    = require('jsonwebtoken');
 const crypto = require('crypto');
-const { JWT_SECRET, JWT_EXPIRES_IN, ACTIVATION_TOKEN_TTL_HOURS, RESET_TOKEN_TTL_HOURS } = require('../../config/env');
+const { JWT_SECRET, JWT_EXPIRES_IN, ACTIVATION_TOKEN_TTL_HOURS, RESET_TOKEN_TTL_HOURS, FRONTEND_URL } = require('../../config/env');
 const userRepository               = require('../../database/repositories/user.repository');
 const roleRepository               = require('../../database/repositories/role.repository');
 const blacklistedTokenRepository   = require('../../database/repositories/blacklisted-token.repository');
 const activationTokenRepository    = require('../../database/repositories/activation-token.repository');
 const passwordResetTokenRepository = require('../../database/repositories/password-reset-token.repository');
+const { sendMail }                 = require('../../shared/utils/mailer');
 
 const generateHexToken = () => crypto.randomBytes(32).toString('hex');
+
+const escapeHtml = (value) =>
+  String(value).replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[char]);
+
+// A mail delivery hiccup (SMTP down, etc.) must not turn an otherwise-successful registration
+// or reset request into a 500 after the DB write already committed, since there's no resend
+// endpoint to recover from that; it's logged instead so the flow degrades to "no email arrives"
+// rather than "the request fails but the account/token still got created".
+const trySendMail = async (options) => {
+  try {
+    await sendMail(options);
+  } catch (err) {
+    console.error('Failed to send email:', err.message);
+  }
+};
 
 const register = async ({ first_name, last_name, email, password }) => {
   const existing = await userRepository.findByEmail(email);
@@ -25,7 +43,15 @@ const register = async ({ first_name, last_name, email, password }) => {
   const expires_at = new Date(Date.now() + (ACTIVATION_TOKEN_TTL_HOURS || 24) * 3600000);
   await activationTokenRepository.create({ user_id: user.id, token, created_at: new Date(), expires_at });
 
-  return { activationToken: token };
+  const activationUrl = `${FRONTEND_URL}/auth/activate/${token}`;
+  await trySendMail({
+    to: email,
+    subject: 'Activate your account',
+    html: `<p>Hi ${escapeHtml(first_name)},</p><p>Click the link below to activate your account:</p><p><a href="${activationUrl}">${activationUrl}</a></p>`,
+  });
+
+  const { password: _pw, ...safeUser } = user.toJSON();
+  return safeUser;
 };
 
 const activate = async (token) => {
@@ -64,12 +90,18 @@ const logout = async ({ token, tokenDecoded }) => {
 
 const forgotPassword = async ({ email }) => {
   const user = await userRepository.findByEmail(email);
-  if (!user) return null;
+  if (!user) return;
 
   const token       = generateHexToken();
   const expiry_date = new Date(Date.now() + (RESET_TOKEN_TTL_HOURS || 1) * 3600000);
   await passwordResetTokenRepository.create({ user_id: user.id, token, type: 'password_reset', expiry_date });
-  return { resetToken: token };
+
+  const resetUrl = `${FRONTEND_URL}/auth/reset-password/${token}`;
+  await trySendMail({
+    to: email,
+    subject: 'Reset your password',
+    html: `<p>Click the link below to reset your password:</p><p><a href="${resetUrl}">${resetUrl}</a></p>`,
+  });
 };
 
 const resetPassword = async ({ token, password }) => {
