@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, computed, input, output } from '@angular/core';
 import { DataTableAction, DataTableColumn } from '../../../../shared/components/data-table/data-table.model';
 import { DataTableComponent } from '../../../../shared/components/data-table/data-table.component';
 import { Customer } from '../../models/customer.model';
@@ -12,6 +12,10 @@ import { Customer } from '../../models/customer.model';
 })
 export class CustomerListComponent {
   readonly customers = input.required<Customer[]>();
+  // UI-only role gating: hides the edit/delete actions for non-admins. The backend does not
+  // yet enforce this on the /customers routes (see README's feature/frontend/auth section), so
+  // this is a courtesy, not a security boundary.
+  readonly isAdmin = input(false);
   readonly edit = output<Customer>();
   readonly delete = output<Customer>();
 
@@ -23,10 +27,14 @@ export class CustomerListComponent {
     { key: 'telephone', header: 'Telephone', value: (row) => row.telephone ?? 'N/A' },
   ];
 
-  protected readonly actions: DataTableAction<Customer>[] = [
-    { icon: 'edit', label: 'Edit', handler: (row) => this.edit.emit(row) },
-    { icon: 'delete', label: 'Delete', handler: (row) => this.delete.emit(row) },
-  ];
+  protected readonly actions = computed<DataTableAction<Customer>[]>(() =>
+    this.isAdmin()
+      ? [
+          { icon: 'edit', label: 'Edit', handler: (row) => this.edit.emit(row) },
+          { icon: 'delete', label: 'Delete', handler: (row) => this.delete.emit(row) },
+        ]
+      : [],
+  );
 
   private fullName(customer: Customer): string {
     const name = [customer.first_name, customer.last_name].filter(Boolean).join(' ');
