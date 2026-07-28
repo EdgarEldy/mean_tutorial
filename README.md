@@ -807,9 +807,76 @@ route resolver for a deep-link-to-edit URL.
 
 ## feature/frontend/auth
 
-**Components:** `LoginComponent`, `RegisterComponent`
-**Guard:** `authGuard` (functional) protects all `/features/*` routes
-**Interceptor:** `jwtInterceptor` attaches `Authorization: Bearer <token>` header to every outgoing request
+Fifth and final frontend slice: real authentication replaces the placeholders left by
+`feature/frontend/core-architecture`, plus role-gated UI retrofitted into all four earlier
+features.
+
+### IMPORTANT: documented RBAC scope, decided explicitly before this branch was built
+
+The backend (`feature/api/auth`, already merged) has JWT authentication but **no role-based
+route protection anywhere**. `categories`/`products`/`customers`/`orders` routes accept
+POST/PUT/DELETE from anyone with no token and no role check, whether hit through the Angular
+app or directly via curl/Postman. The JWT payload itself (`{ id, email, jti }`) carries no
+role info either; the only source of role data is the `roles` array eager-loaded into the
+login response body.
+
+This was a deliberate scope decision, confirmed with the repo owner before writing any code
+for this branch: **this branch is frontend-only**. It adds:
+
+- A **functional route guard** (`authGuard`) blocking navigation to `/categories`,
+  `/products`, `/customers`, `/orders` unless the user has a session. This checks
+  *authentication* only, not *role* — any logged-in user, admin or not, can navigate there.
+- **UI-only role gating**: the "New X" button and the edit/delete row actions across all four
+  resources are hidden for non-admins (`AuthStateService.isAdmin`, derived from the
+  `role_name` on the logged-in user's roles).
+
+It does **not** add any backend enforcement. A non-admin (or a completely unauthenticated
+client bypassing the Angular app entirely) can still create, update, or delete any category,
+product, customer, or order via a direct API call. Every `isAdmin` gate in the frontend code
+is commented as "a courtesy, not a security boundary" for exactly this reason. Closing this
+gap for real would mean adding an `authorize(role)` middleware to the backend routes, which
+was explicitly deferred rather than folded into this branch.
+
+### Tasks
+
+- [x] Add `core/models/auth-user.model.ts` (`AuthUser`/`AuthRole`, `role_name` field matching
+      `role.js`, not `name`)
+- [x] Add `core/services/auth-state.service.ts`: signal-based session (`user`,
+      `isAuthenticated`, `isAdmin`), persists `token`+`user` to `localStorage` (there is no
+      `GET /auth/me` to re-fetch role data after a reload), and owns `logout()` (always clears
+      the local session even if the backend call fails)
+- [x] Rewire `core/guards/auth.guard.ts` and `core/interceptors/jwt.interceptor.ts` from their
+      core-architecture placeholders to use `AuthStateService`; the interceptor now also
+      clears the session and redirects to `/login` on a 401
+- [x] Add `features/auth/`: `AuthService` (register/activate/login/forgotPassword/
+      resetPassword against `/auth`), and five pages (login, register, activate,
+      forgot-password, reset-password). Since the backend has no email service, register/
+      forgot-password responses embed the activation/reset token directly, and the
+      corresponding pages surface a direct link instead of "check your email"
+- [x] Add `shared/validators/passwords-match.validator.ts`, shared by the register and
+      reset-password forms
+- [x] Wire real login/logout state into `shared/components/topbar/`, replacing the disabled
+      placeholder menu items from core-architecture
+- [x] Add `canActivate: [authGuard]` to the categories/products/customers/orders routes
+- [x] Retrofit `isAdmin`-gated UI into all four existing features' list and page components
+      (see the RBAC scope note above)
+- [x] Karma + Jasmine unit tests for every new/changed file (322 total, up from 241 before
+      this branch)
+- [x] Code review pass: 2 CRITICAL findings, both regressions in existing test coverage
+      caused by the retrofit (six pre-existing specs broke on a missing `HttpClient` provider
+      once they transitively touched the new `AuthStateService`; four `*-list` specs still
+      treated the new `actions` `computed()` as a plain array), fixed via new test coverage
+      rather than production code changes. Also fixed two WARNINGs: a dangling open dialog if
+      `isAdmin` flips to `false` while the orders deep-link dialog is open, and an undocumented
+      frontend-stricter-than-backend password complexity rule (now commented as intentional)
+
+### Checklist
+
+- [x] `ng build --configuration development` succeeds
+- [x] `yarn test` passes (322/322)
+- [ ] Manual check: register, activate, login, logout, forgot/reset password, and the
+      isAdmin-gated UI against the running backend (not exercised in a browser yet, no MySQL
+      instance was available in the environment this branch was built in)
 
 ---
 

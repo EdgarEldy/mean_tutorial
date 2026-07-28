@@ -1,8 +1,10 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { ActivatedRoute, Data, Router } from '@angular/router';
 import { Observable, Subject, of, throwError } from 'rxjs';
+import { AuthStateService } from '../../../../core/services/auth-state.service';
 import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { OrderFormComponent } from '../../components/order-form/order-form.component';
 import { Order } from '../../models/order.model';
@@ -33,18 +35,22 @@ describe('OrdersPageComponent', () => {
   let dialogSpy: jasmine.SpyObj<MatDialog>;
   let routerSpy: jasmine.SpyObj<Router>;
   let afterClosedSubject: Subject<unknown>;
-  let dialogRefStub: { afterClosed: () => Observable<unknown> };
+  let dialogRefStub: { afterClosed: () => Observable<unknown>; close: jasmine.Spy };
+  let authStateStub: { isAdmin: ReturnType<typeof signal<boolean>> };
 
   beforeEach(() => {
     orderServiceSpy = jasmine.createSpyObj<OrderService>('OrderService', ['getAll', 'create', 'update', 'delete']);
     orderServiceSpy.getAll.and.returnValue(of(orders));
 
     afterClosedSubject = new Subject<unknown>();
-    dialogRefStub = { afterClosed: () => afterClosedSubject.asObservable() };
+    dialogRefStub = { afterClosed: () => afterClosedSubject.asObservable(), close: jasmine.createSpy('close') };
     dialogSpy = jasmine.createSpyObj<MatDialog>('MatDialog', ['open']);
-    dialogSpy.open.and.returnValue(dialogRefStub as MatDialogRef<unknown>);
+    dialogSpy.open.and.returnValue(dialogRefStub as unknown as MatDialogRef<unknown>);
 
     routerSpy = jasmine.createSpyObj<Router>('Router', ['navigate']);
+
+    // isAdmin defaults to true so the pre-existing "New order" button and deep-link tests keep passing.
+    authStateStub = { isAdmin: signal(true) };
   });
 
   function createComponent(routeData: Data = {}) {
@@ -58,6 +64,7 @@ describe('OrdersPageComponent', () => {
         { provide: MatDialog, useValue: dialogSpy },
         { provide: ActivatedRoute, useValue: route },
         { provide: Router, useValue: routerSpy },
+        { provide: AuthStateService, useValue: authStateStub },
       ],
     });
 
@@ -125,6 +132,31 @@ describe('OrdersPageComponent', () => {
         product_id: 5,
         quantity: 4,
       });
+      expect(routerSpy.navigate).toHaveBeenCalledWith(['/orders']);
+    });
+
+    it('should not open the dialog and should redirect to /orders when a non-admin hits the deep link', () => {
+      authStateStub.isAdmin.set(false);
+      const resolvedOrder = orders[0];
+
+      createComponent({ order: resolvedOrder });
+
+      expect(dialogSpy.open).not.toHaveBeenCalled();
+      expect(routerSpy.navigate).toHaveBeenCalledWith(['/orders']);
+    });
+
+    it('should force-close an already-open deep-linked dialog if isAdmin flips to false while it is open', () => {
+      const resolvedOrder = orders[0];
+      const fixture = createComponent({ order: resolvedOrder });
+
+      expect(dialogSpy.open).toHaveBeenCalledTimes(1);
+      expect(dialogRefStub.close).not.toHaveBeenCalled();
+
+      authStateStub.isAdmin.set(false);
+      fixture.detectChanges();
+      fixture.detectChanges();
+
+      expect(dialogRefStub.close).toHaveBeenCalledTimes(1);
       expect(routerSpy.navigate).toHaveBeenCalledWith(['/orders']);
     });
   });
@@ -261,6 +293,26 @@ describe('OrdersPageComponent', () => {
 
       expect(orderServiceSpy.delete).toHaveBeenCalled();
       expect(orderServiceSpy.getAll).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('isAdmin gating', () => {
+    it('should show the "New order" button when the user is admin', () => {
+      const fixture = createComponent();
+
+      const compiled = fixture.nativeElement as HTMLElement;
+      const buttons = Array.from(compiled.querySelectorAll('button')).map((b) => b.textContent?.trim());
+      expect(buttons.some((text) => text?.includes('New order'))).toBeTrue();
+    });
+
+    it('should hide the "New order" button when the user is not admin', () => {
+      authStateStub.isAdmin.set(false);
+
+      const fixture = createComponent();
+
+      const compiled = fixture.nativeElement as HTMLElement;
+      const buttons = Array.from(compiled.querySelectorAll('button')).map((b) => b.textContent?.trim());
+      expect(buttons.some((text) => text?.includes('New order'))).toBeFalse();
     });
   });
 });

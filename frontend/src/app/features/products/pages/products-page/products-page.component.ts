@@ -4,6 +4,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { AuthStateService } from '../../../../core/services/auth-state.service';
 import {
   ConfirmDialogComponent,
   ConfirmDialogData,
@@ -25,9 +26,11 @@ import { ProductService } from '../../services/product.service';
 export class ProductsPageComponent implements OnInit {
   private readonly productService = inject(ProductService);
   private readonly dialog = inject(MatDialog);
+  private readonly authState = inject(AuthStateService);
 
   protected readonly products = signal<Product[]>([]);
   protected readonly loading = signal(false);
+  protected readonly isAdmin = this.authState.isAdmin;
 
   ngOnInit(): void {
     this.load();

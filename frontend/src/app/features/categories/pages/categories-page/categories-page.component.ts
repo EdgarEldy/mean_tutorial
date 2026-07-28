@@ -4,6 +4,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { AuthStateService } from '../../../../core/services/auth-state.service';
 import {
   ConfirmDialogComponent,
   ConfirmDialogData,
@@ -25,11 +26,13 @@ import { CategoryService } from '../../services/category.service';
 export class CategoriesPageComponent implements OnInit {
   private readonly categoryService = inject(CategoryService);
   private readonly dialog = inject(MatDialog);
+  private readonly authState = inject(AuthStateService);
 
   // signal() holds local page state; the template reads it by calling categories()/loading(),
   // and .set() below is what triggers a re-render, no async pipe or manual change detection needed.
   protected readonly categories = signal<Category[]>([]);
   protected readonly loading = signal(false);
+  protected readonly isAdmin = this.authState.isAdmin;
 
   ngOnInit(): void {
     this.load();

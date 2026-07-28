@@ -21,7 +21,7 @@ const orders: Order[] = [
 ];
 
 describe('OrderListComponent', () => {
-  function createComponent() {
+  function createComponent(isAdmin = true) {
     TestBed.configureTestingModule({
       imports: [OrderListComponent],
       providers: [provideNoopAnimations()],
@@ -29,6 +29,7 @@ describe('OrderListComponent', () => {
 
     const fixture = TestBed.createComponent(OrderListComponent);
     fixture.componentRef.setInput('orders', orders);
+    fixture.componentRef.setInput('isAdmin', isAdmin);
     return fixture;
   }
 
@@ -107,6 +108,31 @@ describe('OrderListComponent', () => {
   });
 
   describe('actions', () => {
+    it('should wire edit and delete row actions when isAdmin is true', () => {
+      const fixture = createComponent();
+      fixture.detectChanges();
+
+      const actions = fixture.componentInstance['actions']();
+      expect(actions.length).toBe(2);
+    });
+
+    it('should expose no actions when isAdmin is false (the default)', () => {
+      const fixture = createComponent(false);
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance['actions']()).toEqual([]);
+    });
+
+    it('should hide the actions column entirely and render no edit/delete buttons when isAdmin is false', () => {
+      const fixture = createComponent(false);
+      fixture.detectChanges();
+      fixture.detectChanges();
+
+      const compiled = fixture.nativeElement as HTMLElement;
+      expect(compiled.querySelectorAll('button[aria-label="Edit"]').length).toBe(0);
+      expect(compiled.querySelectorAll('button[aria-label="Delete"]').length).toBe(0);
+    });
+
     it('edit action should emit the row via the edit output', () => {
       const fixture = createComponent();
       fixture.detectChanges();
@@ -114,7 +140,7 @@ describe('OrderListComponent', () => {
       const emitted: Order[] = [];
       fixture.componentInstance.edit.subscribe((order) => emitted.push(order));
 
-      const editAction = fixture.componentInstance['actions'].find((a) => a.label === 'Edit')!;
+      const editAction = fixture.componentInstance['actions']().find((a) => a.label === 'Edit')!;
       editAction.handler(orders[0]);
 
       expect(emitted).toEqual([orders[0]]);
@@ -127,7 +153,7 @@ describe('OrderListComponent', () => {
       const emitted: Order[] = [];
       fixture.componentInstance.delete.subscribe((order) => emitted.push(order));
 
-      const deleteAction = fixture.componentInstance['actions'].find((a) => a.label === 'Delete')!;
+      const deleteAction = fixture.componentInstance['actions']().find((a) => a.label === 'Delete')!;
       deleteAction.handler(orders[1]);
 
       expect(emitted).toEqual([orders[1]]);

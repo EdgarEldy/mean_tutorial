@@ -8,15 +8,18 @@
   }
 
   <mat-card-content>
-    <div class="page-toolbar">
-      <button mat-raised-button color="primary" type="button" (click)="openCreateDialog()">
-        <mat-icon>add</mat-icon>
-        New product
-      </button>
-    </div>
+    @if (isAdmin()) {
+      <div class="page-toolbar">
+        <button mat-raised-button color="primary" type="button" (click)="openCreateDialog()">
+          <mat-icon>add</mat-icon>
+          New product
+        </button>
+      </div>
+    }
 
     <app-product-list
       [products]="products()"
+      [isAdmin]="isAdmin()"
       (edit)="openEditDialog($event)"
       (delete)="confirmDelete($event)"
     />

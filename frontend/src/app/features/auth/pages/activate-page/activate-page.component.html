@@ -1,0 +1,20 @@
+<div class="auth-page">
+  <mat-card class="auth-card">
+    <mat-card-content class="auth-status">
+      @switch (state()) {
+        @case ('pending') {
+          <mat-spinner diameter="32" />
+          <p>Activating your account...</p>
+        }
+        @case ('success') {
+          <p>Your account is now active.</p>
+          <a mat-raised-button color="primary" routerLink="/login">Go to login</a>
+        }
+        @case ('error') {
+          <p>This activation link is invalid or has already been used.</p>
+          <a mat-raised-button color="primary" routerLink="/register">Back to registration</a>
+        }
+      }
+    </mat-card-content>
+  </mat-card>
+</div>

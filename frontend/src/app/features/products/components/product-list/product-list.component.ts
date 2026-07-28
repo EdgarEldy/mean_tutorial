@@ -12,6 +12,10 @@ import { Product } from '../../models/product.model';
 })
 export class ProductListComponent {
   readonly products = input.required<Product[]>();
+  // UI-only role gating: hides the edit/delete actions for non-admins. The backend does not
+  // yet enforce this on the /products routes (see README's feature/frontend/auth section), so
+  // this is a courtesy, not a security boundary.
+  readonly isAdmin = input(false);
   readonly edit = output<Product>();
   readonly delete = output<Product>();
 
@@ -28,8 +32,12 @@ export class ProductListComponent {
     { key: 'unit_price', header: 'Unit price', value: (row) => `$${row.unit_price.toFixed(2)}` },
   ];
 
-  protected readonly actions: DataTableAction<Product>[] = [
-    { icon: 'edit', label: 'Edit', handler: (row) => this.edit.emit(row) },
-    { icon: 'delete', label: 'Delete', handler: (row) => this.delete.emit(row) },
-  ];
+  protected readonly actions = computed<DataTableAction<Product>[]>(() =>
+    this.isAdmin()
+      ? [
+          { icon: 'edit', label: 'Edit', handler: (row) => this.edit.emit(row) },
+          { icon: 'delete', label: 'Delete', handler: (row) => this.delete.emit(row) },
+        ]
+      : [],
+  );
 }
