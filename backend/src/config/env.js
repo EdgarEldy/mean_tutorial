@@ -11,4 +11,10 @@ module.exports = {
   JWT_EXPIRES_IN:             process.env.JWT_EXPIRES_IN            || '7d',
   ACTIVATION_TOKEN_TTL_HOURS: parseInt(process.env.ACTIVATION_TOKEN_TTL_HOURS, 10) || 24,
   RESET_TOKEN_TTL_HOURS:      parseInt(process.env.RESET_TOKEN_TTL_HOURS, 10)      || 1,
+  SMTP_HOST:   process.env.SMTP_HOST   || '127.0.0.1',
+  SMTP_PORT:   parseInt(process.env.SMTP_PORT, 10) || 1025,
+  MAIL_FROM:   process.env.MAIL_FROM   || 'no-reply@mean-tutorial.test',
+  // Stripped of a trailing slash so URL-building call sites can safely do `${FRONTEND_URL}/path`
+  // without risking a double slash if someone sets this with one in .env.
+  FRONTEND_URL: (process.env.FRONTEND_URL || 'http://localhost:4200').replace(/\/+$/, ''),
 };
