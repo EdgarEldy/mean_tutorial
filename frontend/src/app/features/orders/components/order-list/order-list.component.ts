@@ -12,6 +12,10 @@ import { Order } from '../../models/order.model';
 })
 export class OrderListComponent {
   readonly orders = input.required<Order[]>();
+  // UI-only role gating: hides the edit/delete actions for non-admins. The backend does not
+  // yet enforce this on the /orders resource (see README's feature/frontend/auth section), so
+  // this is a courtesy, not a security boundary.
+  readonly isAdmin = input(false);
   readonly edit = output<Order>();
   readonly delete = output<Order>();
 
@@ -27,10 +31,14 @@ export class OrderListComponent {
     { key: 'total', header: 'Total', value: (row) => `$${row.total.toFixed(2)}` },
   ];
 
-  protected readonly actions: DataTableAction<Order>[] = [
-    { icon: 'edit', label: 'Edit', handler: (row) => this.edit.emit(row) },
-    { icon: 'delete', label: 'Delete', handler: (row) => this.delete.emit(row) },
-  ];
+  protected readonly actions = computed<DataTableAction<Order>[]>(() =>
+    this.isAdmin()
+      ? [
+          { icon: 'edit', label: 'Edit', handler: (row) => this.edit.emit(row) },
+          { icon: 'delete', label: 'Delete', handler: (row) => this.delete.emit(row) },
+        ]
+      : [],
+  );
 
   private customerName(order: Order): string {
     if (!order.customer) return 'Unknown customer';
