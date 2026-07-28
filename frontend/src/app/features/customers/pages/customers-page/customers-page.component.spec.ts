@@ -1,7 +1,9 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { Observable, Subject, of, throwError } from 'rxjs';
+import { AuthStateService } from '../../../../core/services/auth-state.service';
 import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { CustomerFormComponent } from '../../components/customer-form/customer-form.component';
 import { Customer } from '../../models/customer.model';
@@ -18,6 +20,7 @@ describe('CustomersPageComponent', () => {
   let dialogSpy: jasmine.SpyObj<MatDialog>;
   let afterClosedSubject: Subject<unknown>;
   let dialogRefStub: { afterClosed: () => Observable<unknown> };
+  let authStateStub: { isAdmin: ReturnType<typeof signal<boolean>> };
 
   beforeEach(() => {
     customerServiceSpy = jasmine.createSpyObj<CustomerService>('CustomerService', [
@@ -33,12 +36,16 @@ describe('CustomersPageComponent', () => {
     dialogSpy = jasmine.createSpyObj<MatDialog>('MatDialog', ['open']);
     dialogSpy.open.and.returnValue(dialogRefStub as MatDialogRef<unknown>);
 
+    // isAdmin defaults to true so the pre-existing "New customer" button tests keep finding it.
+    authStateStub = { isAdmin: signal(true) };
+
     TestBed.configureTestingModule({
       imports: [CustomersPageComponent],
       providers: [
         provideNoopAnimations(),
         { provide: CustomerService, useValue: customerServiceSpy },
         { provide: MatDialog, useValue: dialogSpy },
+        { provide: AuthStateService, useValue: authStateStub },
       ],
     });
   });
@@ -233,6 +240,28 @@ describe('CustomersPageComponent', () => {
 
       expect(customerServiceSpy.delete).toHaveBeenCalled();
       expect(customerServiceSpy.getAll).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('isAdmin gating', () => {
+    it('should show the "New customer" button when the user is admin', () => {
+      const fixture = createComponent();
+      fixture.detectChanges();
+
+      const compiled = fixture.nativeElement as HTMLElement;
+      const buttons = Array.from(compiled.querySelectorAll('button')).map((b) => b.textContent?.trim());
+      expect(buttons.some((text) => text?.includes('New customer'))).toBeTrue();
+    });
+
+    it('should hide the "New customer" button when the user is not admin', () => {
+      authStateStub.isAdmin.set(false);
+
+      const fixture = createComponent();
+      fixture.detectChanges();
+
+      const compiled = fixture.nativeElement as HTMLElement;
+      const buttons = Array.from(compiled.querySelectorAll('button')).map((b) => b.textContent?.trim());
+      expect(buttons.some((text) => text?.includes('New customer'))).toBeFalse();
     });
   });
 });
