@@ -1,9 +1,66 @@
-<mat-card class="home-card">
-  <mat-card-header>
-    <mat-card-title>Welcome</mat-card-title>
-  </mat-card-header>
-  <mat-card-content>
-    <p>The MEAN Tutorial frontend shell is up and running on Angular Material.</p>
-    <p>Features will appear in the sidebar as their branches land.</p>
-  </mat-card-content>
-</mat-card>
+<div class="home">
+  <div class="page-header">
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-subtitle">Overview of your store</p>
+  </div>
+
+  <div class="stat-grid">
+    <mat-card class="stat-card">
+      <mat-card-content class="stat-content">
+        <div class="stat-icon stat-icon--blue">
+          <mat-icon>category</mat-icon>
+        </div>
+        <div class="stat-body">
+          <span class="stat-value">N/A</span>
+          <span class="stat-label">Categories</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <mat-card-content class="stat-content">
+        <div class="stat-icon stat-icon--green">
+          <mat-icon>inventory_2</mat-icon>
+        </div>
+        <div class="stat-body">
+          <span class="stat-value">N/A</span>
+          <span class="stat-label">Products</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <mat-card-content class="stat-content">
+        <div class="stat-icon stat-icon--violet">
+          <mat-icon>people</mat-icon>
+        </div>
+        <div class="stat-body">
+          <span class="stat-value">N/A</span>
+          <span class="stat-label">Customers</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <mat-card-content class="stat-content">
+        <div class="stat-icon stat-icon--orange">
+          <mat-icon>receipt_long</mat-icon>
+        </div>
+        <div class="stat-body">
+          <span class="stat-value">N/A</span>
+          <span class="stat-label">Orders</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <mat-card class="recent-card">
+    <mat-card-header>
+      <mat-card-title>Recent Orders</mat-card-title>
+    </mat-card-header>
+    <mat-card-content class="empty-state">
+      <mat-icon class="empty-icon">receipt_long</mat-icon>
+      <p>No orders yet</p>
+    </mat-card-content>
+  </mat-card>
+</div>
