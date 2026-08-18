@@ -1,5 +1,37 @@
-.page-toolbar {
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--mat-sys-on-surface);
+  letter-spacing: -0.01em;
+}
+
+.page-subtitle {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.page-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+}
+
+.card-toolbar {
   display: flex;
   justify-content: flex-end;
-  margin-bottom: 1rem;
+  padding: 16px 0 8px;
 }
