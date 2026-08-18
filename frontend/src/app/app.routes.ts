@@ -15,11 +15,11 @@ export const routes: Routes = [
         path: 'categories',
         loadChildren: () => import('./features/categories/categories.routes').then((m) => m.categoriesRoutes),
       },
+      {
+        path: 'products',
+        loadChildren: () => import('./features/products/products.routes').then((m) => m.productsRoutes),
+      },
     ],
-  },
-  {
-    path: 'products',
-    loadChildren: () => import('./features/products/products.routes').then((m) => m.productsRoutes),
   },
   { path: '**', redirectTo: '' },
 ];
