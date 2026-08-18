@@ -1,4 +1,4 @@
-<mat-toolbar color="primary" class="topbar">
+<mat-toolbar class="topbar">
   <button mat-icon-button (click)="menuToggle.emit()" aria-label="Toggle navigation">
     <mat-icon>menu</mat-icon>
   </button>
@@ -9,11 +9,12 @@
     <mat-icon>account_circle</mat-icon>
   </button>
   <mat-menu #userMenu="matMenu">
-    <button mat-menu-item disabled>
+    <button mat-menu-item>
       <mat-icon>person</mat-icon>
       <span>Profile</span>
     </button>
-    <button mat-menu-item disabled>
+    <mat-divider />
+    <button mat-menu-item>
       <mat-icon>logout</mat-icon>
       <span>Logout</span>
     </button>

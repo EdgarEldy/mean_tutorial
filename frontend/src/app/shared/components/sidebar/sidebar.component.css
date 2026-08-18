@@ -1,13 +1,55 @@
-.sidebar-brand {
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--mat-sys-primary);
+  overflow: hidden;
+}
+
+.sidebar-header {
   display: flex;
   align-items: center;
-  justify-content: center;
-  height: 64px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
+  gap: 12px;
+  padding: 0 20px;
+  min-height: 64px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.sidebar-logo {
+  font-size: 26px;
+  width: 26px;
+  height: 26px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.sidebar-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: white;
+}
+
+.sidebar-nav {
+  padding: 10px 0;
+}
+
+.sidebar-nav a {
+  --mat-list-list-item-label-text-color: rgba(255, 255, 255, 0.75);
+  --mat-list-list-item-leading-icon-color: rgba(255, 255, 255, 0.6);
+  --mat-list-list-item-hover-label-text-color: white;
+  --mat-list-list-item-hover-leading-icon-color: white;
+  margin: 2px 10px;
+  border-radius: 10px;
+  transition: background 0.15s ease;
+}
+
+.sidebar-nav a:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .active-link {
-  background: color-mix(in srgb, var(--mat-sys-primary) 12%, transparent);
+  --mat-list-list-item-label-text-color: white !important;
+  --mat-list-list-item-leading-icon-color: white !important;
+  background: rgba(255, 255, 255, 0.2) !important;
+  font-weight: 600;
 }
