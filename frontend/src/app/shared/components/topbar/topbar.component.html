@@ -1,4 +1,4 @@
-<mat-toolbar color="primary" class="topbar">
+<mat-toolbar class="topbar">
   <button mat-icon-button (click)="menuToggle.emit()" aria-label="Toggle navigation">
     <mat-icon>menu</mat-icon>
   </button>
@@ -9,20 +9,14 @@
     <mat-icon>account_circle</mat-icon>
   </button>
   <mat-menu #userMenu="matMenu">
-    @if (isAuthenticated()) {
-      <button mat-menu-item disabled>
-        <mat-icon>person</mat-icon>
-        <span>{{ user()?.first_name }} {{ user()?.last_name }}</span>
-      </button>
-      <button mat-menu-item (click)="logout()">
-        <mat-icon>logout</mat-icon>
-        <span>Logout</span>
-      </button>
-    } @else {
-      <button mat-menu-item routerLink="/login">
-        <mat-icon>login</mat-icon>
-        <span>Login</span>
-      </button>
-    }
+    <button mat-menu-item>
+      <mat-icon>person</mat-icon>
+      <span>Profile</span>
+    </button>
+    <mat-divider />
+    <button mat-menu-item>
+      <mat-icon>logout</mat-icon>
+      <span>Logout</span>
+    </button>
   </mat-menu>
 </mat-toolbar>

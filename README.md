@@ -528,11 +528,11 @@ Full RBAC + JWT authentication — register, account activation, login, logout, 
 
 | Method | URL | Auth | Description |
 |---|---|---|---|
-| POST | `/api/v1/auth/register` | No | Create account, email an activation link, return the safe user (no token, no password) |
+| POST | `/api/v1/auth/register` | No | Create account + return activation token |
 | GET | `/api/v1/auth/activate/:token` | No | Activate account |
-| POST | `/api/v1/auth/login` | No | Returns JWT + user (with roles) |
+| POST | `/api/v1/auth/login` | No | Returns JWT |
 | POST | `/api/v1/auth/logout` | Bearer JWT | Blacklists the current JWT |
-| POST | `/api/v1/auth/forgot-password` | No | Email a reset link if the account exists; same generic response either way |
+| POST | `/api/v1/auth/forgot-password` | No | Returns password reset token |
 | POST | `/api/v1/auth/reset-password` | No | Consume token, set new password |
 
 ### Files (one commit each)
@@ -556,44 +556,15 @@ Migrations (8) → Models (6) → Seeders (2) → Repositories (5) → `auth.mid
 7. Attach req.user, req.token, req.tokenDecoded → next()
 ```
 
-### Email delivery (`shared/utils/mailer.js`)
-
-`register`/`forgot-password` originally returned the activation/reset token directly in the
-API response, with response messages that said "check your email" while no email was ever
-sent. Fixed by adding a thin `nodemailer` wrapper (`SMTP_HOST`/`SMTP_PORT`/`MAIL_FROM` in
-`.env`, defaults point at [MailHog](https://github.com/mailhog/MailHog) on `127.0.0.1:1025`)
-and having both endpoints actually send an email whose link points at `FRONTEND_URL` (the
-Angular app, default `http://localhost:4200`) instead of exposing the token in the response.
-In dev, view "sent" mail at MailHog's UI on `http://localhost:8025`.
-
-Fixed alongside this: `forgotPassword` used to return `{ resetToken }` when the account
-existed and `null` when it didn't — a response-shape enumeration leak on top of the
-intentionally generic message. It now returns nothing in either case, so the HTTP response is
-byte-identical regardless of whether the account exists; only the side effect (an email being
-sent or not) differs.
-
-### Bug fixed: `role_user`/`role_permission` missing timestamps
-
-`user.addRole(roleId)` (called from `register()`) threw `Unknown column 'createdAt' in 'field
-list'` on **every** registration attempt, because
-`20240101000008-create-role-user.js`/`20240101000009-create-role-permission.js` never created
-`createdAt`/`updatedAt` columns on those join tables, while the `belongsToMany` associations
-in `user.js`/`role.js` don't disable timestamps. This meant nobody could ever successfully
-register — never caught because there was no integration test for this module at all.
-Fixed by adding the missing columns directly to both migration files (not a new migration:
-the original migration could never have produced a working role assignment anyway, so there's
-no real environment this could regress — anyone with a pre-existing local DB predating this
-fix should `db:migrate:undo` those two migrations and re-run `db:migrate`).
-
 ### Checklist
 
-- [x] `POST /register` sends an activation email and returns the safe user (no token, no password)
-- [x] `GET /activate/:token` sets `enabled = true` on the user
-- [x] `POST /login` on inactive account returns `403`; on success returns `user.roles` populated (regression-tests the join-table fix above)
-- [x] `POST /logout` + subsequent request with same token returns `401`
-- [x] `POST /forgot-password` sends a reset email only when the account exists, but returns the identical response either way (regression-tests the enumeration-leak fix above)
-- [x] `POST /reset-password` with expired token returns `400`
-- [x] Unit and integration tests pass (`tests/unit/auth.service.test.js`, `tests/integration/auth.test.js` — the latter verifies real email delivery via MailHog's HTTP API)
+- [ ] `POST /register` returns `activationToken` in response
+- [ ] `GET /activate/:token` sets `enabled = true` on the user
+- [ ] `POST /login` on inactive account returns `403`
+- [ ] `POST /logout` + subsequent request with same token returns `401`
+- [ ] `POST /forgot-password` returns `resetToken`
+- [ ] `POST /reset-password` with expired token returns `400`
+- [ ] Unit and integration tests pass
 
 ---
 
@@ -647,272 +618,36 @@ fix should `db:migrate:undo` those two migrations and re-run `db:migrate`).
 
 ## feature/frontend/categories
 
-First complete vertical slice on top of `feature/frontend/core-architecture`: Category CRUD
-using Reactive Forms, a MatDialog form, and the shared `DataTableComponent`.
-
-### Endpoints consumed
-
-| Method | URL | Description |
-|---|---|---|
-| GET | `/api/v1/categories` | List all categories |
-| POST | `/api/v1/categories` | Create a category |
-| PUT | `/api/v1/categories/:id` | Update a category |
-| DELETE | `/api/v1/categories/:id` | Delete a category |
-
-### Tasks
-
-- [x] Add `features/categories/models/category.model.ts` (`Category`, `CategoryInput`)
-- [x] Add `features/categories/services/category.service.ts`: wraps `ApiService` against `/categories`, unwraps the `ApiResponse<T>` envelope for callers, and owns the `ngx-toastr` success/error feedback for this resource
-- [x] Add `shared/components/confirm-dialog/`: a generic yes/no `MatDialog`, introduced here for the delete confirmation and meant to be reused by products/customers/orders
-- [x] Add `features/categories/components/category-form/`: `MatDialog` content with a Reactive Form (`category_name`, `required` + `maxLength(255)`, mirroring `category.validation.js`), pre-filled in edit mode
-- [x] Add `features/categories/components/category-list/`: thin wrapper configuring the shared `DataTableComponent` (single `category_name` column, edit/delete row actions)
-- [x] Add `features/categories/pages/categories-page/`: route-level page owning the list state (`signal<Category[]>`), opening the form dialog for create/edit and the confirm dialog for delete, reloading the list after every successful mutation
-- [x] Add `features/categories/categories.routes.ts` (`loadComponent()`) and wire it into `app.routes.ts` under `/categories`
-- [x] Add the Categories link to `shared/components/sidebar/`
-- [x] Karma + Jasmine unit tests for the service, both dialog components, the list component, and the page component
-- [x] Code review pass (no CRITICAL findings after fixing an unhandled-error gap on the create/update/delete subscriptions)
-
-### Checklist
-
-- [x] `ng build --configuration development` succeeds
-- [x] `yarn test` passes (75/75)
-- [ ] Manual check: create, edit, delete, search, and PDF export against the running backend (not exercised in a browser yet, no MySQL instance was available in the environment this branch was built in)
+**Components:** `CategoryListComponent`, `CategoryFormComponent`, `CategoriesPageComponent`
+**Service:** `CategoryService` with `HttpClient` pointing to `/api/v1/categories`
+**Route:** lazy-loaded under `/categories`
 
 ---
 
 ## feature/frontend/products
 
-Second vertical slice, same CRUD pattern as categories plus the codebase's one sanctioned
-cross-feature import: the product form needs a category dropdown.
-
-### Endpoints consumed
-
-| Method | URL | Description |
-|---|---|---|
-| GET | `/api/v1/products` | List all products (nested `category` included) |
-| POST | `/api/v1/products` | Create a product (response has no nested `category`) |
-| PUT | `/api/v1/products/:id` | Update a product (nested `category` included) |
-| DELETE | `/api/v1/products/:id` | Delete a product |
-
-### Tasks
-
-- [x] Add `features/products/models/product.model.ts` (`Product`, `ProductInput`); `category` is optional and typed with a locally-declared shape (not imported from the categories feature) since only `product.repository.js`'s `findAll`/`findById` eager-load the association, `create` does not
-- [x] Add `features/products/services/product.service.ts`: same shape as `CategoryService`, wraps `/products`
-- [x] Add `features/products/components/product-form/`: Reactive Form (`product_name` required + `maxLength(255)`, `unit_price` required + `min(0)`, `category_id` required + `min(1)`) mirroring `product.validation.js`. Loads categories via `CategoryService.getAll()` (the one sanctioned cross-feature import) through a `shareReplay(1)` observable exposed with `toSignal()`, and adds an `AsyncValidatorFn` on `category_id` that re-checks the selected id against that same shared observable instead of a fresh request per keystroke, guarding against a category deleted between page load and submit
-- [x] Add `features/products/components/product-list/`: shared `DataTableComponent` wrapper (name/category/unit price columns) with a `computed()` product count; category name read straight off the row (already resolved by the backend), falling back to "Uncategorized" for a freshly created row
-- [x] Add `features/products/pages/products-page/`: same page-level pattern as categories (list state via `signal()`, form + confirm dialogs, reload after mutation)
-- [x] Add `features/products/products.routes.ts` and wire it into `app.routes.ts` under `/products`; add the Products link to the sidebar
-- [x] Karma + Jasmine unit tests for the service, form component (including the async validator and the `form.invalid || form.pending` guard in `submit()`), list component, and page component
-- [x] Code review pass (no CRITICAL findings; hardened `submit()` to also check `form.pending` since `form.invalid` alone doesn't cover a still-resolving async validator)
-
-### Checklist
-
-- [x] `ng build --configuration development` succeeds
-- [x] `yarn test` passes (125/125)
-- [ ] Manual check: create, edit, delete (including the category dropdown and its async validation) against the running backend (not exercised in a browser yet, no MySQL instance was available in the environment this branch was built in)
+**Components:** `ProductListComponent`, `ProductFormComponent`, `ProductsPageComponent`
+**Extra:** Category dropdown in form (cross-feature import allowed in form only)
 
 ---
 
 ## feature/frontend/customers
 
-Third vertical slice, same CRUD pattern as categories/products but with the opposite
-validation shape: every field is optional at the backend, so the frontend form has no
-`Validators.required` at all, only format/length checks.
-
-### Endpoints consumed
-
-| Method | URL | Description |
-|---|---|---|
-| GET | `/api/v1/customers` | List all customers |
-| POST | `/api/v1/customers` | Create a customer (any/all fields may be omitted) |
-| PUT | `/api/v1/customers/:id` | Update a customer |
-| DELETE | `/api/v1/customers/:id` | Delete a customer |
-
-### Tasks
-
-- [x] Add `features/customers/models/customer.model.ts` (`Customer` with every field
-      `string | null`, `CustomerInput` as `Partial<Omit<Customer, 'id'>>`), mirroring
-      `customer.js`'s `allowNull: true` columns and `customer.validation.js`'s `.optional()`
-      rules
-- [x] Add `features/customers/services/customer.service.ts`: same shape as
-      `CategoryService`/`ProductService`, wraps `/customers`
-- [x] Add `features/customers/components/customer-form/`: Reactive Form with no
-      `Validators.required` anywhere, only `maxLength`/`email`/a permissive telephone pattern,
-      matching the backend's fully-optional validation
-- [x] Fix (caught in code review before merge): `submit()` now strips blank fields instead of
-      sending them as empty strings. `express-validator`'s `.optional()` only skips a field
-      when the key is entirely absent from the body, not when it's present as `''`, so an
-      unstripped payload would 422 on `isEmail('')` whenever email was left blank, defeating
-      the point of this branch
-- [x] Add `features/customers/components/customer-list/`: shared `DataTableComponent` wrapper
-      (name/email/telephone columns), each falling back to a placeholder instead of rendering
-      `null` for an unset field
-- [x] Add `features/customers/pages/customers-page/`: same page-level pattern as
-      categories/products
-- [x] Add `features/customers/customers.routes.ts` and wire it into `app.routes.ts` under
-      `/customers`; add the Customers link to the sidebar
-- [x] Karma + Jasmine unit tests for the service, form component (including the
-      strip-blank-fields fix), list component, and page component
-- [x] Code review pass (one CRITICAL finding: the blank-fields bug above, fixed before merge)
-
-### Checklist
-
-- [x] `ng build --configuration development` succeeds
-- [x] `yarn test` passes (179/179)
-- [ ] Manual check: create a customer with only some fields filled in, edit, delete, against
-      the running backend (not exercised in a browser yet, no MySQL instance was available in
-      the environment this branch was built in)
+Same CRUD pattern as categories.
 
 ---
 
 ## feature/frontend/orders
 
-Fourth and most complex vertical slice: the only resource consumed over GraphQL instead of
-REST, a form with two cross-feature dropdowns and a live computed total, and a functional
-route resolver for a deep-link-to-edit URL.
-
-### GraphQL operations consumed
-
-| Operation | Name | Description |
-|---|---|---|
-| Query | `orders` | List all orders |
-| Query | `order(id)` | Single order, used by the edit-deep-link resolver |
-| Mutation | `createOrder(input)` | Create an order |
-| Mutation | `updateOrder(id, input)` | Update an order |
-| Mutation | `deleteOrder(id)` | Delete an order |
-
-### Tasks
-
-- [x] Add `core/services/graphql.service.ts` + `core/models/graphql-response.model.ts`: a
-      thin POST wrapper around `/api/v1/graphql`, the GraphQL counterpart to `ApiService`.
-      Treats a non-empty `errors` array as the primary failure signal instead of HTTP status,
-      since Apollo Server returns 200 even when a resolver throws
-- [x] Add `features/orders/models/order.model.ts`: `Order.id` and nested `customer.id`/
-      `product.id` are typed `string` (GraphQL's `ID` scalar always serializes as a string),
-      unlike the REST features where ids are `number`
-- [x] Add `features/orders/services/order.service.ts`: uses `GraphqlService` instead of
-      `ApiService`, otherwise the same unwrap + toast + rethrow shape as the REST feature
-      services
-- [x] Add `features/orders/components/order-form/`: two cross-feature dropdowns
-      (`CustomerService`/`ProductService`, reusing the existing REST services rather than
-      re-fetching over GraphQL), coercing the order's string ids to numbers in edit mode
-      (`Number(order.customer?.id)`) so `mat-select`'s strict-equality value matching finds
-      the pre-filled option. A `computed()` `total` derived from `toSignal()`'d
-      `product_id`/`quantity` value changes mirrors the server-side `quantity × unit_price`
-      calculation live, before the order is even submitted
-- [x] Add `features/orders/components/order-list/`: shared `DataTableComponent` wrapper
-      (customer/product/quantity/total columns, each falling back since `customer`/`product`
-      are nullable in the GraphQL schema) plus a `computed()` total revenue
-- [x] Add `features/orders/pages/orders-page/`: same page-level pattern as the other
-      features, plus handling for a resolver-driven deep link (see below)
-- [x] Add `features/orders/order.resolver.ts`: a functional `ResolveFn` that preloads an
-      order for the `/orders/:id/edit` route before it activates, falling back to `/orders`
-      if the id doesn't resolve
-- [x] Add `features/orders/orders.routes.ts` (`''` and `':id/edit'`, both `loadComponent()`
-      the same page) and wire it into `app.routes.ts`; add the Orders link to the sidebar
-- [x] Fix (caught in code review before merge): the page originally read the resolved order
-      from a one-time `ngOnInit` snapshot. Since `''` and `:id/edit` both load the same
-      component, Angular's default route reuse strategy can keep that instance alive across
-      navigations between two different edit deep links without re-running `ngOnInit`,
-      silently missing the second one. Switched to reading `route.data` reactively via
-      `toSignal()` plus an `effect()`, and navigate back to `/orders` once the deep-linked
-      dialog closes so the URL doesn't keep pointing at a route with nothing open
-- [x] Karma + Jasmine unit tests for `GraphqlService`, `OrderService`, the form (including a
-      dedicated regression test for the string-vs-number id coercion), the list, the page
-      (including the deep-link flow), and the resolver
-- [x] Code review pass (no CRITICAL findings; two WARNINGs on the resolver/route-reuse
-      interaction fixed before merge, see above)
-
-### Checklist
-
-- [x] `ng build --configuration development` succeeds
-- [x] `yarn test` passes (241/241)
-- [ ] Manual check: create/edit/delete an order (including the live total and the
-      `/orders/:id/edit` deep link) against the running backend and its `/api/v1/graphql`
-      endpoint (not exercised in a browser yet, no MySQL instance was available in the
-      environment this branch was built in)
+**Extra:** Product and customer dropdowns in form. Automatic `total` display (computed from selected product price × quantity).
 
 ---
 
 ## feature/frontend/auth
 
-Fifth and final frontend slice: real authentication replaces the placeholders left by
-`feature/frontend/core-architecture`, plus role-gated UI retrofitted into all four earlier
-features.
-
-### IMPORTANT: documented RBAC scope, decided explicitly before this branch was built
-
-The backend (`feature/api/auth`, already merged) has JWT authentication but **no role-based
-route protection anywhere**. `categories`/`products`/`customers`/`orders` routes accept
-POST/PUT/DELETE from anyone with no token and no role check, whether hit through the Angular
-app or directly via curl/Postman. The JWT payload itself (`{ id, email, jti }`) carries no
-role info either; the only source of role data is the `roles` array eager-loaded into the
-login response body.
-
-This was a deliberate scope decision, confirmed with the repo owner before writing any code
-for this branch: **this branch is frontend-only**. It adds:
-
-- A **functional route guard** (`authGuard`) blocking navigation to `/categories`,
-  `/products`, `/customers`, `/orders` unless the user has a session. This checks
-  *authentication* only, not *role* — any logged-in user, admin or not, can navigate there.
-- **UI-only role gating**: the "New X" button and the edit/delete row actions across all four
-  resources are hidden for non-admins (`AuthStateService.isAdmin`, derived from the
-  `role_name` on the logged-in user's roles).
-
-It does **not** add any backend enforcement. A non-admin (or a completely unauthenticated
-client bypassing the Angular app entirely) can still create, update, or delete any category,
-product, customer, or order via a direct API call. Every `isAdmin` gate in the frontend code
-is commented as "a courtesy, not a security boundary" for exactly this reason. Closing this
-gap for real would mean adding an `authorize(role)` middleware to the backend routes, which
-was explicitly deferred rather than folded into this branch.
-
-### Tasks
-
-- [x] Add `core/models/auth-user.model.ts` (`AuthUser`/`AuthRole`, `role_name` field matching
-      `role.js`, not `name`)
-- [x] Add `core/services/auth-state.service.ts`: signal-based session (`user`,
-      `isAuthenticated`, `isAdmin`), persists `token`+`user` to `localStorage` (there is no
-      `GET /auth/me` to re-fetch role data after a reload), and owns `logout()` (always clears
-      the local session even if the backend call fails)
-- [x] Rewire `core/guards/auth.guard.ts` and `core/interceptors/jwt.interceptor.ts` from their
-      core-architecture placeholders to use `AuthStateService`; the interceptor now also
-      clears the session and redirects to `/login` on a 401
-- [x] Add `features/auth/`: `AuthService` (register/activate/login/forgotPassword/
-      resetPassword against `/auth`), and five pages (login, register, activate,
-      forgot-password, reset-password)
-- [x] Follow-up once `feature/api/auth` added real email delivery (see that section): the
-      backend no longer returns the activation/reset token in the response body at all, so
-      `register-page`/`forgot-password-page` were updated to drop the "here's your token
-      directly" shortcut and just show a "check your email" confirmation instead. Their
-      `RegisterResult`/`ForgotPasswordResult` models and specs were updated to match the new
-      byte-identical-either-way response shape
-- [x] Add `shared/validators/passwords-match.validator.ts`, shared by the register and
-      reset-password forms
-- [x] Wire real login/logout state into `shared/components/topbar/`, replacing the disabled
-      placeholder menu items from core-architecture
-- [x] Add `canActivate: [authGuard]` to the categories/products/customers/orders routes
-- [x] Retrofit `isAdmin`-gated UI into all four existing features' list and page components
-      (see the RBAC scope note above)
-- [x] Karma + Jasmine unit tests for every new/changed file (322 total, up from 241 before
-      this branch)
-- [x] Code review pass: 2 CRITICAL findings, both regressions in existing test coverage
-      caused by the retrofit (six pre-existing specs broke on a missing `HttpClient` provider
-      once they transitively touched the new `AuthStateService`; four `*-list` specs still
-      treated the new `actions` `computed()` as a plain array), fixed via new test coverage
-      rather than production code changes. Also fixed two WARNINGs: a dangling open dialog if
-      `isAdmin` flips to `false` while the orders deep-link dialog is open, and an undocumented
-      frontend-stricter-than-backend password complexity rule (now commented as intentional)
-
-### Checklist
-
-- [x] `ng build --configuration development` succeeds
-- [x] `yarn test` passes (321/321)
-- [x] The full backend flow (register → MailHog receives the activation email → activate →
-      login → forgot-password → MailHog receives the reset email → reset-password → login
-      with the new password) was manually verified end-to-end against a live MySQL + MailHog
-      instance via direct API calls
-- [ ] Manual check of the Angular pages themselves (clicking through register/login/forgot/
-      reset and the isAdmin-gated UI in an actual browser) has not been done yet
+**Components:** `LoginComponent`, `RegisterComponent`
+**Guard:** `authGuard` (functional) protects all `/features/*` routes
+**Interceptor:** `jwtInterceptor` attaches `Authorization: Bearer <token>` header to every outgoing request
 
 ---
 
