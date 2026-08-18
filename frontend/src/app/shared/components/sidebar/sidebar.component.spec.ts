@@ -37,6 +37,6 @@ describe('SidebarComponent', () => {
     const fixture = TestBed.createComponent(SidebarComponent);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.sidebar-brand')?.textContent).toContain('MEAN Tutorial');
+    expect(compiled.querySelector('.sidebar-header')?.textContent).toContain('MEAN Tutorial');
   });
 });
