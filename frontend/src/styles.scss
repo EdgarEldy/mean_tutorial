@@ -12,8 +12,15 @@ html {
   ));
 }
 
-html, body {
+html,
+body {
   height: 100%;
   margin: 0;
   font-family: Roboto, 'Helvetica Neue', sans-serif;
+  background: #f0f4f8;
+}
+
+/* Global card polish */
+mat-card {
+  border-radius: 14px !important;
 }
