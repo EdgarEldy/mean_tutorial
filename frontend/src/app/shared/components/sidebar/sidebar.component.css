@@ -3,7 +3,8 @@
   flex-direction: column;
   height: 100%;
   background: var(--mat-sys-primary);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .sidebar-header {
