@@ -17,10 +17,16 @@ body {
   height: 100%;
   margin: 0;
   font-family: Roboto, 'Helvetica Neue', sans-serif;
+}
+
+/* Dashboard background — single source of truth */
+body {
   background: #f0f4f8;
 }
 
-/* Global card polish */
-mat-card {
-  border-radius: 14px !important;
+/* Global card shape via M3 tokens */
+:root {
+  --mdc-elevated-card-container-shape: 14px;
+  --mdc-filled-card-container-shape: 14px;
+  --mdc-outlined-card-container-shape: 14px;
 }

@@ -34,7 +34,6 @@
 }
 
 .stat-card {
-  border-radius: 14px !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07) !important;
 }
 
@@ -86,26 +85,11 @@
   letter-spacing: 0.06em;
 }
 
-/* Bottom grid */
-.bottom-grid {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 20px;
-}
-
-@media (max-width: 800px) {
-  .bottom-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.recent-card,
-.quick-card {
-  border-radius: 14px !important;
+/* Recent orders card */
+.recent-card {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07) !important;
 }
 
-/* Empty state */
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -126,19 +110,4 @@
 .empty-state p {
   margin: 0;
   font-size: 0.9rem;
-}
-
-/* Quick actions */
-.quick-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding-top: 4px !important;
-}
-
-.quick-actions a {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: flex-start;
 }
