@@ -1,0 +1,9 @@
+<p class="product-count">{{ productCount() }} product(s)</p>
+
+<app-data-table
+  [columns]="columns"
+  [actions]="actions()"
+  [data]="products()"
+  searchPlaceholder="Search products"
+  exportFileName="products"
+/>

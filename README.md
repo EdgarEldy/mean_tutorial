@@ -618,36 +618,9 @@ Migrations (8) → Models (6) → Seeders (2) → Repositories (5) → `auth.mid
 
 ## feature/frontend/categories
 
-First complete vertical slice on top of `feature/frontend/core-architecture`: Category CRUD
-using Reactive Forms, a MatDialog form, and the shared `DataTableComponent`.
-
-### Endpoints consumed
-
-| Method | URL | Description |
-|---|---|---|
-| GET | `/api/v1/categories` | List all categories |
-| POST | `/api/v1/categories` | Create a category |
-| PUT | `/api/v1/categories/:id` | Update a category |
-| DELETE | `/api/v1/categories/:id` | Delete a category |
-
-### Tasks
-
-- [x] Add `features/categories/models/category.model.ts` (`Category`, `CategoryInput`)
-- [x] Add `features/categories/services/category.service.ts`: wraps `ApiService` against `/categories`, unwraps the `ApiResponse<T>` envelope for callers, and owns the `ngx-toastr` success/error feedback for this resource
-- [x] Add `shared/components/confirm-dialog/`: a generic yes/no `MatDialog`, introduced here for the delete confirmation and meant to be reused by products/customers/orders
-- [x] Add `features/categories/components/category-form/`: `MatDialog` content with a Reactive Form (`category_name`, `required` + `maxLength(255)`, mirroring `category.validation.js`), pre-filled in edit mode
-- [x] Add `features/categories/components/category-list/`: thin wrapper configuring the shared `DataTableComponent` (single `category_name` column, edit/delete row actions)
-- [x] Add `features/categories/pages/categories-page/`: route-level page owning the list state (`signal<Category[]>`), opening the form dialog for create/edit and the confirm dialog for delete, reloading the list after every successful mutation
-- [x] Add `features/categories/categories.routes.ts` (`loadComponent()`) and wire it into `app.routes.ts` under `/categories`
-- [x] Add the Categories link to `shared/components/sidebar/`
-- [x] Karma + Jasmine unit tests for the service, both dialog components, the list component, and the page component
-- [x] Code review pass (no CRITICAL findings after fixing an unhandled-error gap on the create/update/delete subscriptions)
-
-### Checklist
-
-- [x] `ng build --configuration development` succeeds
-- [x] `yarn test` passes (75/75)
-- [ ] Manual check: create, edit, delete, search, and PDF export against the running backend (not exercised in a browser yet, no MySQL instance was available in the environment this branch was built in)
+**Components:** `CategoryListComponent`, `CategoryFormComponent`, `CategoriesPageComponent`
+**Service:** `CategoryService` with `HttpClient` pointing to `/api/v1/categories`
+**Route:** lazy-loaded under `/categories`
 
 ---
 

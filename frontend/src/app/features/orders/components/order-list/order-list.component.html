@@ -1,0 +1,9 @@
+<p class="order-total-revenue">Total revenue: ${{ totalRevenue().toFixed(2) }}</p>
+
+<app-data-table
+  [columns]="columns"
+  [actions]="actions()"
+  [data]="orders()"
+  searchPlaceholder="Search orders"
+  exportFileName="orders"
+/>
