@@ -1,24 +1,10 @@
-import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { Component, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { MatSidenavModule } from '@angular/material/sidenav';
+import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { map } from 'rxjs';
-import { FooterComponent } from './shared/components/footer/footer.component';
-import { SidebarComponent } from './shared/components/sidebar/sidebar.component';
-import { TopbarComponent } from './shared/components/topbar/topbar.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, MatSidenavModule, SidebarComponent, TopbarComponent, FooterComponent],
+  imports: [RouterOutlet],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
 })
-export class AppComponent {
-  private readonly breakpointObserver = inject(BreakpointObserver);
-
-  protected readonly isHandset = toSignal(
-    this.breakpointObserver.observe(Breakpoints.Handset).pipe(map((result) => result.matches)),
-    { initialValue: false },
-  );
-}
+export class AppComponent {}
