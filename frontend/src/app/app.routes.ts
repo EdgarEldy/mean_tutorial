@@ -1,12 +1,12 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
+import { authRoutes } from './features/auth/auth.routes';
 import { DashboardLayoutComponent } from './layouts/dashboard-layout/dashboard-layout.component';
 
 export const routes: Routes = [
-  {
-    path: '',
-    loadChildren: () => import('./features/auth/auth.routes').then((m) => m.authRoutes),
-  },
+  // Public auth pages — each loadComponent() keeps its chunk lazy
+  ...authRoutes,
+  // Protected dashboard — authGuard redirects to /login when not authenticated
   {
     path: '',
     component: DashboardLayoutComponent,
