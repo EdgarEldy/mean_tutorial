@@ -11,6 +11,10 @@ jobs:
   backend:
     name: Backend -- test
     runs-on: ubuntu-latest
+    if: |
+      contains(github.event.head_commit.modified, 'backend/') ||
+      contains(github.event.head_commit.added, 'backend/') ||
+      github.event_name == 'pull_request'
 
     services:
       mysql:
@@ -25,11 +29,6 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
-      mailhog:
-        image: mailhog/mailhog
-        ports:
-          - 1025:1025
-          - 8025:8025
 
     env:
       NODE_ENV: test
@@ -40,10 +39,6 @@ jobs:
       DB_PASSWORD: ci_password
       DB_NAME: mean_db_test
       DB_DIALECT: mysql
-      SMTP_HOST: 127.0.0.1
-      SMTP_PORT: 1025
-      MAIL_FROM: no-reply@mean-tutorial.test
-      FRONTEND_URL: http://localhost:4200
 
     steps:
       - uses: actions/checkout@v4
@@ -70,6 +65,10 @@ jobs:
   frontend:
     name: Frontend -- build & test
     runs-on: ubuntu-latest
+    if: |
+      contains(github.event.head_commit.modified, 'frontend/') ||
+      contains(github.event.head_commit.added, 'frontend/') ||
+      github.event_name == 'pull_request'
 
     steps:
       - uses: actions/checkout@v4
